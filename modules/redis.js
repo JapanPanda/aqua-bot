@@ -7,8 +7,8 @@ const redis = require('redis');
 promisifyAll(redis);
 
 const client = redis.createClient({
-  host: '127.0.0.1',
-  port: '1337',
+  host: process.env.REDIS_HOST,
+  port: process.env.REDIS_PORT,
 });
 
 logger.info('Initialized redis-server');
