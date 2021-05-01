@@ -18,7 +18,7 @@ module.exports = {
         };
         redisClient.set(
           guild_id,
-          JSON.stringify(defaultSettings, null, 1),
+          JSON.stringify(guildSettings, null, 1),
           (err) => {
             if (err) {
               logger.error(err);

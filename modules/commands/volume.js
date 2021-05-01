@@ -49,6 +49,10 @@ module.exports = {
       });
 
       message.channel.send(`Sheesh, set the volume setting to: ${args[0]}%.`);
+    } else {
+      message.channel.send(
+        `Incorrect usage of $volume.\nExample: $volume (50)\nWithout specifying the new volume to set it at, it'll state the current volume.`
+      );
     }
   },
 };
