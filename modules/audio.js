@@ -41,11 +41,13 @@ const playAssetAudio = async (message, args, file) => {
 
     dispatcher.on('start', () => {
       globals.dispatchers[guild_id] = dispatcher;
-      logger.info(`Started to play ${file}`);
+      logger.info(`Started to play ${file} for ${guild_id}`);
     });
 
     dispatcher.on('finish', () => {
-      logger.info(`Finished playing ${file}! Starting timer to disconnect.`);
+      logger.info(
+        `Finished playing ${file} for ${guild_id}! Starting timer to disconnect.`
+      );
       setTimeout(
         () => {
           if (_.isEqual(globals.dispatchers[guild_id], dispatcher)) {
@@ -107,11 +109,13 @@ const playStreamingAudio = async (message, args) => {
 
     dispatcher.on('start', () => {
       globals.dispatchers[guild_id] = dispatcher;
-      logger.info(`Started to play ${link}`);
+      logger.info(`Started to play ${link} for ${guild_id}`);
     });
 
     dispatcher.on('finish', () => {
-      logger.info(`Finished playing ${link}! Starting timer to disconnect.`);
+      logger.info(
+        `Finished playing ${link} for ${guild_id}! Starting timer to disconnect.`
+      );
       setTimeout(
         () => {
           if (_.isEqual(globals.dispatchers[guild_id], dispatcher)) {
@@ -139,6 +143,7 @@ const stop = (message) => {
     globals.dispatchers[guild_id] !== null
   ) {
     if (message.member.voice.channel.id === message.guild.me.voice.channel.id) {
+      logger.info(`Stopped playing ${link} for ${guild_id}!`);
       message.guild.me.voice.channel.leave();
     }
     delete globals.dispatchers[guild_id];

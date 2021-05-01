@@ -43,7 +43,7 @@ module.exports = {
       }
 
       guildSettings.volume = newVolume;
-      console.log(globals);
+
       if (
         globals.dispatchers[guild_id] !== undefined &&
         globals.dispatchers[guild_id] !== null
