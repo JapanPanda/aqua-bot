@@ -16,18 +16,14 @@ const playAssetAudio = async (message, args, file) => {
       guildSettings = {
         volume: 0.5,
       };
-      redisClient.set(
-        guild_id,
-        JSON.stringify(guildSettings, null, 1),
-        (err) => {
-          if (err) {
-            logger.error(err);
-            return;
-          }
-
-          logger.info(`Successfully created default settings for ${guild_id}.`);
+      redisClient.set(guild_id, JSON.stringify(guildSettings), (err) => {
+        if (err) {
+          logger.error(err);
+          return;
         }
-      );
+
+        logger.info(`Successfully created default settings for ${guild_id}.`);
+      });
     } else {
       guildSettings = JSON.parse(guildSettings);
     }
@@ -83,18 +79,14 @@ const playStreamingAudio = async (message, args) => {
       guildSettings = {
         volume: 0.5,
       };
-      redisClient.set(
-        guild_id,
-        JSON.stringify(guildSettings, null, 1),
-        (err) => {
-          if (err) {
-            logger.error(err);
-            return;
-          }
-
-          logger.info(`Successfully created default settings for ${guild_id}.`);
+      redisClient.set(guild_id, JSON.stringify(guildSettings), (err) => {
+        if (err) {
+          logger.error(err);
+          return;
         }
-      );
+
+        logger.info(`Successfully created default settings for ${guild_id}.`);
+      });
     } else {
       guildSettings = JSON.parse(guildSettings);
     }
