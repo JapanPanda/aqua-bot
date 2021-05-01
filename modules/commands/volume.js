@@ -33,9 +33,20 @@ module.exports = {
         `Sheesh, the current volume setting is: ${volume * 100}%.`
       );
     } else if (args.length === 1) {
-      guildSettings.volume = parseFloat(args[0]) / 100;
+      const newVolume = parseFloat(args[0]) / 100;
+      if (isNaN(newVolume)) {
+        message.channel.send(
+          `Incorrect usage of $volume.\nExample: $volume (50)\nWithout specifying the new volume to set it at, it'll state the current volume.`
+        );
+        return;
+      }
 
-      if (globals.dispatchers.guild_id !== null) {
+      guildSettings.volume = newVolume;
+
+      if (
+        globals.dispatchers.guild_id !== undefined &&
+        globals.dispatchers.guild_id !== null
+      ) {
         globals.dispatchers.guild_id.setVolume(guildSettings.volume);
       }
 
