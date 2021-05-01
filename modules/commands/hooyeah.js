@@ -1,9 +1,9 @@
-const playAudio = require('../playAudio');
+const { playAssetAudio } = require('../audio');
 
 module.exports = {
   name: 'hoyeah',
   description: 'Plays hoyeah in the current voice channel.',
   async execute(message, args) {
-    playAudio(message, args, 'hoyeah.mp3');
+    playAssetAudio(message, args, 'hoyeah.mp3');
   },
 };
