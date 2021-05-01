@@ -145,7 +145,7 @@ const stop = (message) => {
     globals.dispatchers[guild_id] !== null
   ) {
     if (message.member.voice.channel.id === message.guild.me.voice.channel.id) {
-      logger.info(`Stopped playing ${link} for ${guild_id}!`);
+      logger.info(`Stopped playing for ${guild_id}!`);
       message.guild.me.voice.channel.leave();
     }
     delete globals.dispatchers[guild_id];
