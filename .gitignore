@@ -1,0 +1,5 @@
+.env
+*.log
+dump.rdb
+
+node_modules
