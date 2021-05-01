@@ -138,6 +138,8 @@ const playStreamingAudio = async (message, args) => {
 };
 
 const stop = (message) => {
+  const guild_id = message.guild.id;
+
   if (
     globals.dispatchers[guild_id] !== undefined &&
     globals.dispatchers[guild_id] !== null
