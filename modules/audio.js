@@ -6,6 +6,8 @@ const globals = require('./globals');
 
 const ytdl = require('ytdl-core-discord');
 
+const _ = require('lodash');
+
 // takes care of getting the guild_id volume
 const playAssetAudio = async (message, args, file) => {
   if (message.member.voice.channel) {
@@ -46,11 +48,13 @@ const playAssetAudio = async (message, args, file) => {
       logger.info(`Finished playing ${file}! Starting timer to disconnect.`);
       setTimeout(
         () => {
-          delete globals.dispatchers.guild_id;
-          logger.info('Disconnected after 60 seconds.');
-          connection.disconnect();
+          if (_.isEqual(globals.dispatchers.guild_id, dispatcher)) {
+            delete globals.dispatchers.guild_id;
+            logger.info('Disconnected after 60 seconds.');
+            connection.disconnect();
+          }
         },
-        1000 * 60 * 5,
+        1000 * 30,
         [connection, globals, dispatcher]
       );
     });
@@ -112,11 +116,13 @@ const playStreamingAudio = async (message, args) => {
       logger.info(`Finished playing ${link}! Starting timer to disconnect.`);
       setTimeout(
         () => {
-          delete globals.dispatchers.guild_id;
-          logger.info('Disconnected after 60 seconds.');
-          connection.disconnect();
+          if (_.isEqual(globals.dispatchers.guild_id, dispatcher)) {
+            delete globals.dispatchers.guild_id;
+            logger.info('Disconnected after 60 seconds.');
+            connection.disconnect();
+          }
         },
-        1000 * 60 * 5,
+        1000 * 30,
         [connection, globals, dispatcher]
       );
     });

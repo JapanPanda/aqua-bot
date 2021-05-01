@@ -11,6 +11,13 @@ const client = redis.createClient({
   port: process.env.REDIS_PORT,
 });
 
-logger.info('Initialized redis-server');
+client.on('error', (err) => {
+  logger.error(`Error initializing redis-server.\n${err.stack}`);
+  process.exit(-1);
+});
+
+client.on('ready', () => {
+  logger.info('Initialized redis-server');
+});
 
 module.exports = client;

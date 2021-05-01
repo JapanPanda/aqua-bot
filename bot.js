@@ -5,10 +5,9 @@ const client = new Discord.Client();
 const logger = require('./modules/logger');
 
 const dotenv = require('dotenv');
-
-const redisClient = require('./modules/redis');
-
 dotenv.config();
+
+require('./modules/redis');
 
 const prefix = '$';
 
