@@ -43,12 +43,12 @@ module.exports = {
       }
 
       guildSettings.volume = newVolume;
-
+      console.log(globals);
       if (
-        globals.dispatchers.guild_id !== undefined &&
-        globals.dispatchers.guild_id !== null
+        globals.dispatchers[guild_id] !== undefined &&
+        globals.dispatchers[guild_id] !== null
       ) {
-        globals.dispatchers.guild_id.setVolume(guildSettings.volume);
+        globals.dispatchers[guild_id].setVolume(guildSettings.volume);
       }
 
       redisClient.set(guild_id, JSON.stringify(guildSettings), (err) => {

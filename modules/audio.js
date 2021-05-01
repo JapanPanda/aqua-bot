@@ -40,7 +40,7 @@ const playAssetAudio = async (message, args, file) => {
     });
 
     dispatcher.on('start', () => {
-      globals.dispatchers.guild_id = dispatcher;
+      globals.dispatchers[guild_id] = dispatcher;
       logger.info(`Started to play ${file}`);
     });
 
@@ -48,8 +48,8 @@ const playAssetAudio = async (message, args, file) => {
       logger.info(`Finished playing ${file}! Starting timer to disconnect.`);
       setTimeout(
         () => {
-          if (_.isEqual(globals.dispatchers.guild_id, dispatcher)) {
-            delete globals.dispatchers.guild_id;
+          if (_.isEqual(globals.dispatchers[guild_id], dispatcher)) {
+            delete globals.dispatchers[guild_id];
             logger.info('Disconnected after 60 seconds.');
             connection.disconnect();
           }
@@ -59,7 +59,6 @@ const playAssetAudio = async (message, args, file) => {
       );
     });
 
-    // Always remember to handle errors appropriately!
     dispatcher.on('error', (err) => {
       logger.error(err);
     });
@@ -101,14 +100,13 @@ const playStreamingAudio = async (message, args) => {
 
     const link = args[0];
 
-    // Create a dispatcher
     const dispatcher = connection.play(await ytdl(link), {
       type: 'opus',
       volume: volume,
     });
 
     dispatcher.on('start', () => {
-      globals.dispatchers.guild_id = dispatcher;
+      globals.dispatchers[guild_id] = dispatcher;
       logger.info(`Started to play ${link}`);
     });
 
@@ -116,8 +114,8 @@ const playStreamingAudio = async (message, args) => {
       logger.info(`Finished playing ${link}! Starting timer to disconnect.`);
       setTimeout(
         () => {
-          if (_.isEqual(globals.dispatchers.guild_id, dispatcher)) {
-            delete globals.dispatchers.guild_id;
+          if (_.isEqual(globals.dispatchers[guild_id], dispatcher)) {
+            delete globals.dispatchers[guild_id];
             logger.info('Disconnected after 60 seconds.');
             connection.disconnect();
           }
@@ -127,7 +125,6 @@ const playStreamingAudio = async (message, args) => {
       );
     });
 
-    // Always remember to handle errors appropriately!
     dispatcher.on('error', (err) => {
       logger.error(err);
     });
@@ -138,13 +135,13 @@ const playStreamingAudio = async (message, args) => {
 
 const stop = (message) => {
   if (
-    globals.dispatchers.guild_id !== undefined &&
-    globals.dispatchers.guild_id !== null
+    globals.dispatchers[guild_id] !== undefined &&
+    globals.dispatchers[guild_id] !== null
   ) {
     if (message.member.voice.channel.id === message.guild.me.voice.channel.id) {
       message.guild.me.voice.channel.leave();
     }
-    delete globals.dispatchers.guild_id;
+    delete globals.dispatchers[guild_id];
   }
 };
 
