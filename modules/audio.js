@@ -8,148 +8,123 @@ const ytdl = require('ytdl-core-discord');
 
 const _ = require('lodash');
 
-// takes care of getting the guild_id volume
-const playAssetAudio = async (message, args, file) => {
-  if (message.member.voice.channel) {
-    const guild_id = message.guild.id;
-    let guildSettings = await redisClient.getAsync(guild_id);
+const getGuildSettings = async (guild_id) => {
+  let guildSettings = await redisClient.getAsync(guild_id);
 
-    if (guildSettings === null) {
-      guildSettings = {
-        volume: 0.5,
-      };
-      redisClient.set(guild_id, JSON.stringify(guildSettings), (err) => {
-        if (err) {
-          logger.error(err);
-          return;
-        }
+  if (guildSettings === null) {
+    guildSettings = {
+      volume: 0.5,
+    };
+    redisClient.set(guild_id, JSON.stringify(guildSettings), (err) => {
+      if (err) {
+        logger.error(err);
+        return;
+      }
 
-        logger.info(`Successfully created default settings for ${guild_id}.`);
-      });
-    } else {
-      guildSettings = JSON.parse(guildSettings);
-    }
-
-    const volume = guildSettings.volume;
-
-    const connection = await message.member.voice.channel.join();
-
-    // Create a dispatcher
-    const dispatcher = connection.play(`./assets/${file}`, {
-      volume: volume,
-    });
-
-    dispatcher.on('start', () => {
-      globals.dispatchers[guild_id] = dispatcher;
-      logger.info(`Started to play ${file} for ${guild_id}`);
-    });
-
-    dispatcher.on('finish', () => {
-      logger.info(
-        `Finished playing ${file} for ${guild_id}! Starting timer to disconnect.`
-      );
-      setTimeout(
-        () => {
-          if (_.isEqual(globals.dispatchers[guild_id], dispatcher)) {
-            delete globals.dispatchers[guild_id];
-            logger.info('Disconnected after 60 seconds.');
-            connection.disconnect();
-          }
-        },
-        1000 * 30,
-        [connection, globals, dispatcher]
-      );
-    });
-
-    dispatcher.on('error', (err) => {
-      logger.error(err);
+      logger.info(`Successfully created default settings for ${guild_id}.`);
     });
   } else {
-    message.channel.send('Sheeeesh, join a voice channel first!');
+    guildSettings = JSON.parse(guildSettings);
   }
+
+  return guildSettings;
 };
 
-const playStreamingAudio = async (message, args) => {
-  if (args.length !== 1) {
-    message.channel.send(
-      `Incorrect usage of $play.\nExample: $play https://www.youtube.com/watch?v=7n812BXT0hs`
-    );
-  }
+const playAudio = async (message, audio, isPredefined) => {
+  let audioData = null;
+  let audioOptions = {};
 
-  if (message.member.voice.channel) {
-    const guild_id = message.guild.id;
-    let guildSettings = await redisClient.getAsync(guild_id);
-
-    if (guildSettings === null) {
-      guildSettings = {
-        volume: 0.5,
-      };
-      redisClient.set(guild_id, JSON.stringify(guildSettings), (err) => {
-        if (err) {
-          logger.error(err);
-          return;
-        }
-
-        logger.info(`Successfully created default settings for ${guild_id}.`);
-      });
-    } else {
-      guildSettings = JSON.parse(guildSettings);
+  if (audio.includes('https://www.youtube.com/')) {
+    audioData = await ytdl(audio);
+    console.log(audioData);
+    audioOptions = { type: 'opus' };
+    if (audioData === undefined) {
+      logger.error('Invalid youtube link!');
     }
-
-    const volume = guildSettings.volume;
-
-    const connection = await message.member.voice.channel.join();
-
-    const link = args[0];
-
-    const dispatcher = connection.play(await ytdl(link), {
-      type: 'opus',
-      volume: volume,
-    });
-
-    dispatcher.on('start', () => {
-      globals.dispatchers[guild_id] = dispatcher;
-      logger.info(`Started to play ${link} for ${guild_id}`);
-    });
-
-    dispatcher.on('finish', () => {
-      logger.info(
-        `Finished playing ${link} for ${guild_id}! Starting timer to disconnect.`
-      );
-      setTimeout(
-        () => {
-          if (_.isEqual(globals.dispatchers[guild_id], dispatcher)) {
-            delete globals.dispatchers[guild_id];
-            logger.info('Disconnected after 60 seconds.');
-            connection.disconnect();
-          }
-        },
-        1000 * 30,
-        [connection, globals, dispatcher]
-      );
-    });
-
-    dispatcher.on('error', (err) => {
-      logger.error(err);
-    });
+  } else if (isPredefined) {
+    audioData = `./assets/${audio}`;
   } else {
-    message.channel.send('Sheeeesh, join a voice channel first!');
+    // default to youtube search query
   }
-};
 
-const stop = (message) => {
   const guild_id = message.guild.id;
 
-  if (
-    globals.dispatchers[guild_id] !== undefined &&
-    globals.dispatchers[guild_id] !== null
-  ) {
-    if (message.member.voice.channel.id === message.guild.me.voice.channel.id) {
-      logger.info(`Stopped playing for ${guild_id}!`);
-      message.guild.me.voice.channel.leave();
+  const guildSettings = getGuildSettings(guild_id);
+
+  const volume = guildSettings.volume;
+
+  const connection = await message.member.voice.channel.join();
+
+  audioOptions[volume] = volume;
+
+  // Create a dispatcher
+  const dispatcher = connection.play(audioData, audioOptions);
+
+  dispatcher.on('start', () => {
+    globals.dispatchers[guild_id] = dispatcher;
+    logger.info(`Started to play ${audio} for ${guild_id}`);
+  });
+
+  dispatcher.on('finish', () => {
+    logger.info(`Finished playing ${audio} for ${guild_id}!`);
+
+    globals.queues[guild_id].shift();
+    if (globals.queues[guild_id].length !== 0) {
+      // queue next song
+      logger.info(
+        `Starting next song in the queue (${audio}) for ${guild_id}.`
+      );
+      const nextAudio = globals.queues[guild_id][0];
+
+      playAudio(nextAudio.message, nextAudio.audio, nextAudio.isPredefined);
+    } else {
+      // set timeout to disconnect.
+      logger.info(
+        `Queue finished, disconnecting from ${guild_id} in 30 seconds.`
+      );
+      setTimeout(
+        () => {
+          if (_.isEqual(globals.dispatchers[guild_id], dispatcher)) {
+            delete globals.dispatchers[guild_id];
+            logger.info('Disconnected after 30 seconds.');
+            connection.disconnect();
+          }
+        },
+        1000 * 30,
+        [connection, globals, dispatcher]
+      );
     }
-    delete globals.dispatchers[guild_id];
+  });
+
+  dispatcher.on('error', (err) => {
+    logger.error(err);
+  });
+};
+
+const queueAudio = async (message, args, isPredefined) => {
+  // user isn't in a voice channel
+  if (!message.member.voice.channel) {
+    message.inlineReply('Sheeeesh, get in a voice channel first!');
+    return;
+  }
+
+  const guild_id = message.guild.id;
+
+  if (globals.queues[guild_id] === undefined) {
+    globals.queues[guild_id] = [];
+  }
+
+  // add to guild's queue
+  globals.queues[guild_id].push({
+    message: message,
+    audio: args[0],
+    isPredefined: isPredefined,
+  });
+
+  // if there is nothing in the queue besides itself, go ahead and play it
+  if (globals.queues[guild_id].length == 1) {
+    playAudio(message, args[0], isPredefined);
   }
 };
 
-module.exports = { playAssetAudio, playStreamingAudio, stop };
+module.exports = { queueAudio };

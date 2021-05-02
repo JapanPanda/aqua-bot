@@ -1,32 +1,35 @@
-const fs = require('fs');
-const Discord = require('discord.js');
+const fs = require("fs");
+const Discord = require("discord.js");
+
+require("./modules/extend-message");
+
 const client = new Discord.Client();
 
-const logger = require('./modules/logger');
+const logger = require("./modules/logger");
 
-const dotenv = require('dotenv');
+const dotenv = require("dotenv");
 dotenv.config();
 
-require('./modules/redis');
+require("./modules/redis");
 
-const prefix = '$';
+const prefix = "$";
 
 client.commands = new Discord.Collection();
 
 const commandFiles = fs
-  .readdirSync('./modules/commands')
-  .filter((file) => file.endsWith('.js'));
+  .readdirSync("./modules/commands")
+  .filter((file) => file.endsWith(".js"));
 
 for (const file of commandFiles) {
   const command = require(`./modules/commands/${file}`);
   client.commands.set(command.name, command);
 }
 
-client.once('ready', () => {
-  logger.info('Sheeeesh! The bot is now online!');
+client.once("ready", () => {
+  logger.info("Sheeeesh! The bot is now online!");
 });
 
-client.on('message', (message) => {
+client.on("message", (message) => {
   if (!message.content.startsWith(prefix) || message.author.bot) return;
 
   const args = message.content.slice(prefix.length).trim().split(/ +/);
@@ -39,7 +42,7 @@ client.on('message', (message) => {
   } catch (error) {
     logger.error(error);
     message.reply(
-      'Sheeesh, an error was encountered while trying to execute that command!'
+      "Sheeesh, an error was encountered while trying to execute that command!"
     );
   }
 });

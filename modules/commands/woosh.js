@@ -1,9 +1,9 @@
-const { playAssetAudio } = require('../audio');
+const { queueAudio } = require('../audio');
 
 module.exports = {
   name: 'woosh',
   description: 'Plays woosh in the current voice channel.',
   async execute(message, args) {
-    playAssetAudio(message, args, 'woosh.mp3');
+    queueAudio(message, ['woosh.mp3'], true);
   },
 };
