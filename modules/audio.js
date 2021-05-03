@@ -135,7 +135,6 @@ const queueAudio = async (message, args, isPredefined) => {
 
   let title = null;
   if (isPredefined) {
-    console.log(args);
     title = args[0];
   } else {
     const query = args.join(' ');
@@ -147,7 +146,6 @@ const queueAudio = async (message, args, isPredefined) => {
 
         const shouldPlay = guildGlobal.queue.length === 0;
         let fitAll = true;
-        console.log(playlistResult);
         let queueString = playlistResult.items.reduce((acc, ele, i) => {
           if (i === 1) {
             acc = '';
@@ -184,7 +182,6 @@ const queueAudio = async (message, args, isPredefined) => {
           });
         }
 
-        console.log(queueString);
         const queueEmbed = new discord.MessageEmbed()
           .setColor('#edca1a')
           .addFields({
