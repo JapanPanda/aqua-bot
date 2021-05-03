@@ -54,7 +54,10 @@ client.on('voiceStateUpdate', (oldState, newState) => {
     return;
   }
 
-  if (oldState.channel.members.array().length === 1) {
+  if (
+    oldState.channel.members.array().length === 1 &&
+    oldState.channel.members.has(client.user.id)
+  ) {
     const guildGlobal = getGuildGlobals(oldState.guild.id);
     guildGlobal.connection.disconnect();
     guildGlobal.connection = null;
