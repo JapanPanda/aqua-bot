@@ -34,7 +34,17 @@ const playAudio = async (message, args, isPredefined) => {
 
   const volume = guildSettings.volume;
 
-  const connection = await message.member.voice.channel.join();
+  const guildGlobal = getGuildGlobals(guild_id);
+
+  if (guildGlobal.connection === null) {
+    if (message.member.voice.channel === null) {
+      message.inlineReply("You're not in a voice channel anymore. >:c");
+      return;
+    }
+    guildGlobal.connection = await message.member.voice.channel.join();
+  }
+
+  const connection = guildGlobal.connection;
 
   audioOptions[volume] = volume;
 
@@ -51,14 +61,13 @@ const playAudio = async (message, args, isPredefined) => {
     const guildGlobal = getGuildGlobals(guild_id);
     logger.info(`Finished playing ${audio} for ${guild_id}!`);
     guildGlobal.queue.shift();
-    if (guildGlobal.queues.length !== 0) {
+    if (guildGlobal.queue.length !== 0) {
       // queue next song
       logger.info(
         `Starting next song in the queue (${audio}) for ${guild_id}.`
       );
 
-      const nextAudio = guildGlobal.queues[0];
-      console.log(nextAudio.message);
+      const nextAudio = guildGlobal.queue[0];
       playAudio(nextAudio.message, nextAudio.audio, nextAudio.isPredefined);
     } else {
       // set timeout to disconnect.
@@ -69,13 +78,16 @@ const playAudio = async (message, args, isPredefined) => {
         () => {
           const guildGlobal = getGuildGlobals(guild_id);
           if (_.isEqual(guildGlobal.dispatcher, dispatcher)) {
-            delete guildGlobal.dispatcher;
+            if (guildGlobal.connection !== null) {
+              guildGlobal.connection.disconnect();
+            }
+            guildGlobal.dispatcher = null;
+            guildGlobal.connection = null;
             logger.info('Disconnected after 30 seconds.');
-            connection.disconnect();
           }
         },
         1000 * 30,
-        [connection, guild_id, dispatcher]
+        [guild_id, dispatcher]
       );
     }
   });
@@ -104,7 +116,7 @@ const queueAudio = async (message, args, isPredefined) => {
   });
 
   // if there is nothing in the queue besides itself, go ahead and play it
-  if (guildGlobal.queue.length == 1) {
+  if (guildGlobal.queue.length === 1) {
     playAudio(message, args, isPredefined);
   }
 };

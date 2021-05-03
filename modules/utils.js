@@ -26,7 +26,11 @@ const getGuildSettings = async (guild_id) => {
 
 const getGuildGlobals = (guild_id) => {
   if (globals.guilds[guild_id] === undefined) {
-    globals.guilds[guild_id] = { queue: [], dispatcher: null };
+    globals.guilds[guild_id] = {
+      queue: [],
+      dispatcher: null,
+      connection: null,
+    };
   }
 
   return globals.guilds[guild_id];
