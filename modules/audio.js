@@ -8,35 +8,16 @@ const ytdl = require('ytdl-core-discord');
 
 const _ = require('lodash');
 
-const getGuildSettings = async (guild_id) => {
-  let guildSettings = await redisClient.getAsync(guild_id);
+const { getGuildSettings, getGuildGlobals } = require('./utils');
 
-  if (guildSettings === null) {
-    guildSettings = {
-      volume: 0.5,
-    };
-    redisClient.set(guild_id, JSON.stringify(guildSettings), (err) => {
-      if (err) {
-        logger.error(err);
-        return;
-      }
-
-      logger.info(`Successfully created default settings for ${guild_id}.`);
-    });
-  } else {
-    guildSettings = JSON.parse(guildSettings);
-  }
-
-  return guildSettings;
-};
-
-const playAudio = async (message, audio, isPredefined) => {
+const playAudio = async (message, args, isPredefined) => {
   let audioData = null;
   let audioOptions = {};
 
+  const audio = args.join(' ');
+
   if (audio.includes('https://www.youtube.com/')) {
     audioData = await ytdl(audio);
-    console.log(audioData);
     audioOptions = { type: 'opus' };
     if (audioData === undefined) {
       logger.error('Invalid youtube link!');
@@ -61,21 +42,23 @@ const playAudio = async (message, audio, isPredefined) => {
   const dispatcher = connection.play(audioData, audioOptions);
 
   dispatcher.on('start', () => {
-    globals.dispatchers[guild_id] = dispatcher;
+    const guildGlobal = getGuildGlobals(guild_id);
+    guildGlobal.dispatcher = dispatcher;
     logger.info(`Started to play ${audio} for ${guild_id}`);
   });
 
   dispatcher.on('finish', () => {
+    const guildGlobal = getGuildGlobals(guild_id);
     logger.info(`Finished playing ${audio} for ${guild_id}!`);
-
-    globals.queues[guild_id].shift();
-    if (globals.queues[guild_id].length !== 0) {
+    guildGlobal.queue.shift();
+    if (guildGlobal.queues.length !== 0) {
       // queue next song
       logger.info(
         `Starting next song in the queue (${audio}) for ${guild_id}.`
       );
-      const nextAudio = globals.queues[guild_id][0];
 
+      const nextAudio = guildGlobal.queues[0];
+      console.log(nextAudio.message);
       playAudio(nextAudio.message, nextAudio.audio, nextAudio.isPredefined);
     } else {
       // set timeout to disconnect.
@@ -84,14 +67,15 @@ const playAudio = async (message, audio, isPredefined) => {
       );
       setTimeout(
         () => {
-          if (_.isEqual(globals.dispatchers[guild_id], dispatcher)) {
-            delete globals.dispatchers[guild_id];
+          const guildGlobal = getGuildGlobals(guild_id);
+          if (_.isEqual(guildGlobal.dispatcher, dispatcher)) {
+            delete guildGlobal.dispatcher;
             logger.info('Disconnected after 30 seconds.');
             connection.disconnect();
           }
         },
         1000 * 30,
-        [connection, globals, dispatcher]
+        [connection, guild_id, dispatcher]
       );
     }
   });
@@ -110,20 +94,18 @@ const queueAudio = async (message, args, isPredefined) => {
 
   const guild_id = message.guild.id;
 
-  if (globals.queues[guild_id] === undefined) {
-    globals.queues[guild_id] = [];
-  }
+  const guildGlobal = getGuildGlobals(guild_id);
 
   // add to guild's queue
-  globals.queues[guild_id].push({
+  guildGlobal.queue.push({
     message: message,
-    audio: args[0],
+    audio: args,
     isPredefined: isPredefined,
   });
 
   // if there is nothing in the queue besides itself, go ahead and play it
-  if (globals.queues[guild_id].length == 1) {
-    playAudio(message, args[0], isPredefined);
+  if (guildGlobal.queue.length == 1) {
+    playAudio(message, args, isPredefined);
   }
 };
 

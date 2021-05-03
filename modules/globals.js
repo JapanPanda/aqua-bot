@@ -1,6 +1,5 @@
 const globals = {
-  dispatchers: {},
-  queues: {},
+  guilds: {},
 };
 
 module.exports = globals;
