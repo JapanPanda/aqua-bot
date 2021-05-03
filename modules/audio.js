@@ -61,6 +61,7 @@ const playAudio = async (message, args, isPredefined) => {
     const guildGlobal = getGuildGlobals(guild_id);
     logger.info(`Finished playing ${audio} for ${guild_id}!`);
     guildGlobal.queue.shift();
+
     if (guildGlobal.queue.length !== 0) {
       // queue next song
       logger.info(
@@ -107,6 +108,15 @@ const queueAudio = async (message, args, isPredefined) => {
   const guild_id = message.guild.id;
 
   const guildGlobal = getGuildGlobals(guild_id);
+
+  // bot is in use already
+  if (
+    guildGlobal.connection !== null &&
+    message.member.voice.channelID !== guildGlobal.connection.channel.id
+  ) {
+    message.inlineReply("The bot's already in use on this server!");
+    return;
+  }
 
   // add to guild's queue
   guildGlobal.queue.push({
