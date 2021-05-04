@@ -3,7 +3,7 @@ const Discord = require('discord.js');
 
 require('./modules/extend-message');
 
-const client = new Discord.Client();
+const client = new Discord.Client({ partials: ['MESSAGE', 'REACTION'] });
 
 const logger = require('./modules/logger');
 
@@ -12,7 +12,7 @@ dotenv.config();
 
 require('./modules/redis');
 
-const { getGuildGlobals } = require('./modules/utils');
+const { getGuildGlobals, reactionHandler } = require('./modules/utils');
 
 const prefix = '$';
 
@@ -64,6 +64,24 @@ client.on('voiceStateUpdate', (oldState, newState) => {
     guildGlobal.dispatcher = null;
     guildGlobal.queue = [];
   }
+});
+
+client.on('messageReactionAdd', async (reaction, user) => {
+  // bot's reaction
+  if (reaction.me) {
+    return;
+  }
+  // attempt to retrieve message from cache
+  if (reaction.partial) {
+    try {
+      await reaction.fetch();
+    } catch (err) {
+      logger.error(`Failed to retrieve message from cache.\n${err.stack}`);
+      return;
+    }
+  }
+
+  reactionHandler(reaction, user);
 });
 
 client.login(process.env.DISCORD_TOKEN);
