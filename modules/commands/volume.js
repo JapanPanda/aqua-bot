@@ -1,11 +1,13 @@
-const globals = require("../globals");
-const logger = require("../logger");
+const globals = require('../globals');
+const logger = require('../logger');
 
-const redisClient = require("../redis");
+const redisClient = require('../redis');
+
+const { getGuildGlobals } = require('../utils');
 
 module.exports = {
-  name: "volume",
-  description: "Changes volume",
+  name: 'volume',
+  description: 'Changes volume',
   async execute(message, args) {
     const guild_id = message.guild.id;
     let guildSettings = await redisClient.getAsync(guild_id);
@@ -44,11 +46,9 @@ module.exports = {
 
       guildSettings.volume = newVolume;
 
-      if (
-        globals.dispatchers[guild_id] !== undefined &&
-        globals.dispatchers[guild_id] !== null
-      ) {
-        globals.dispatchers[guild_id].setVolume(guildSettings.volume);
+      const guildGlobal = getGuildGlobals(guild_id);
+      if (guildGlobal.dispatcher !== null) {
+        guildGlobal.dispatcher.setVolume(guildSettings.volume);
       }
 
       redisClient.set(guild_id, JSON.stringify(guildSettings), (err) => {
