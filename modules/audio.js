@@ -110,7 +110,7 @@ const playAudio = async (guild_id) => {
       if (encoder !== '') {
         encoder += ',';
       }
-      encoder += 'atempo=0.8,asetrate=44100*1.75';
+      encoder += 'atempo=0.95,asetrate=44100*1.40';
     }
 
     if (bassboost !== 0) {
