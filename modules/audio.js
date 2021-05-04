@@ -25,7 +25,10 @@ const createDispatcher = (
   dispatcher.on('start', () => {
     const guildGlobal = getGuildGlobals(guild_id);
     guildGlobal.dispatcher = dispatcher;
-    logger.info(`Started to play ${title} for ${guild_id}`);
+
+    logger.info(
+      `Started to play ${guildGlobal.queue[0].title} for ${guild_id}`
+    );
   });
 
   dispatcher.on('finish', () => {
