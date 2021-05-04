@@ -32,6 +32,8 @@ const createDispatcher = (
   });
 
   dispatcher.on('finish', () => {
+    const guildGlobal = getGuildGlobals(guild_id);
+
     logger.info(
       `Finished playing ${guildGlobal.queue[0].title} for ${guild_id}!`
     );
