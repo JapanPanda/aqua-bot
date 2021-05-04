@@ -53,7 +53,7 @@ const getQueueEmbed = (args, guild_id) => {
   }
 
   const guildGlobal = getGuildGlobals(guild_id);
-
+  let currSong = guildGlobal.queue[0];
   let queue = [...guildGlobal.queue];
 
   // only want 5 songs shown in the queue
@@ -83,7 +83,7 @@ const getQueueEmbed = (args, guild_id) => {
     return acc + `**${i + offset}**. [${ele.title}](${ele.audio})\n`;
   });
 
-  let currPlayString = `[${queue[0].title}](${queue[0].audio})`;
+  let currPlayString = `[${currSong.title}](${currSong.audio})`;
 
   if (queue.length === 1 || queueString === '') {
     queueString = 'The queue is currently empty!';
