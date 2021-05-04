@@ -25,22 +25,26 @@ const createDispatcher = (
   dispatcher.on('start', () => {
     const guildGlobal = getGuildGlobals(guild_id);
     guildGlobal.dispatcher = dispatcher;
-    logger.info(`Started to play ${audio} for ${guild_id}`);
+    logger.info(`Started to play ${title} for ${guild_id}`);
   });
 
   dispatcher.on('finish', () => {
+    logger.info(`Finished playing ${title} for ${guild_id}!`);
+  });
+
+  dispatcher.on('close', () => {
+    logger.info('Dispatcher was closed');
     const guildGlobal = getGuildGlobals(guild_id);
-    logger.info(`Finished playing ${audio} for ${guild_id}!`);
     guildGlobal.queue.shift();
 
     if (guildGlobal.queue.length !== 0) {
       // queue next song
       logger.info(
-        `Starting next song in the queue (${audio}) for ${guild_id}.`
+        `Starting next song in the queue (${title}) for ${guild_id}.`
       );
 
       const nextAudio = guildGlobal.queue[0];
-      playAudio(nextAudio.message, nextAudio.audio, nextAudio.isPredefined);
+      playAudio(nextAudio.message.guild.id);
     } else {
       // set timeout to disconnect.
       logger.info(
@@ -68,11 +72,12 @@ const createDispatcher = (
   });
 };
 
-const playAudio = async (message, args, isPredefined) => {
+const playAudio = async (guild_id) => {
+  const guildGlobal = getGuildGlobals(guild_id);
+  const { message, audio, isPredefined, title } = guildGlobal.queue[0];
+
   let audioData = null;
   let audioOptions = {};
-
-  const audio = args.join(' ');
 
   if (audio.includes('https://www.youtube.com/')) {
     audioData = ytdl(audio, {
@@ -88,13 +93,9 @@ const playAudio = async (message, args, isPredefined) => {
     audioData = `./assets/${audio}`;
   }
 
-  const guild_id = message.guild.id;
-
   const guildSettings = getGuildSettings(guild_id);
 
   const volume = guildSettings.volume;
-
-  const guildGlobal = getGuildGlobals(guild_id);
 
   if (guildGlobal.connection === null) {
     if (message.member.voice.channel === null) {
@@ -108,6 +109,14 @@ const playAudio = async (message, args, isPredefined) => {
 
   audioOptions[volume] = volume;
 
+  if (!isPredefined) {
+    const nowPlayingEmbed = new discord.MessageEmbed()
+      .setColor('#edca1a')
+      .setTitle('Now Playing')
+      .setDescription(`[${title}](${audio})`);
+
+    message.channel.send(nowPlayingEmbed);
+  }
   createDispatcher(audio, audioData, audioOptions, connection, guild_id);
 };
 
@@ -116,15 +125,17 @@ const queuePlaylist = async (message, args, guildGlobal) => {
     const query = args.join(' ');
     const playlistId = await ytpl.getPlaylistID(query);
     const playlistResult = await ytpl(playlistId, { limit: Infinity });
-
+    logger.info(`Queued the playlist ${playlistResult.title}`);
     const shouldPlay = guildGlobal.queue.length === 0;
     let fitAll = true;
     let queueString = playlistResult.items.reduce((acc, ele, i) => {
       if (i === 1) {
-        acc = '';
+        acc = `**${guildGlobal.queue.length + i}.** [${acc.title}](${
+          acc.shortUrl
+        })\n`;
       }
 
-      const string = `**${guildGlobal.queue.length + i}.** [${ele.title}](${
+      const string = `**${guildGlobal.queue.length + i + 1}.** [${ele.title}](${
         ele.shortUrl
       })\n`;
 
@@ -149,7 +160,7 @@ const queuePlaylist = async (message, args, guildGlobal) => {
     for (const ele of playlistResult.items) {
       guildGlobal.queue.push({
         message: message,
-        audio: [ele.shortUrl],
+        audio: ele.shortUrl,
         title: ele.title,
         isPredefined: false,
       });
@@ -157,15 +168,13 @@ const queuePlaylist = async (message, args, guildGlobal) => {
 
     const queueEmbed = new discord.MessageEmbed()
       .setColor('#edca1a')
-      .addFields({
-        name: `Added ${playlistResult.items.length} videos to the queue`,
-        value: queueString,
-      });
+      .setTitle(`Added ${playlistResult.items.length} videos to the queue`)
+      .setDescription(queueString);
 
     message.inlineReply(queueEmbed);
 
     if (shouldPlay) {
-      playAudio(message, args, false);
+      playAudio(message.guild.id);
     }
   } catch (err) {
     logger.error(
@@ -195,28 +204,28 @@ const queueYoutubeVideo = async (message, args, guildGlobal) => {
   ) {
     message.inlineReply('Invalid youtube link!');
     return;
-  } else {
-    args = [video.url];
   }
 
-  const queueEmbed = new discord.MessageEmbed().setColor('#edca1a').addFields({
-    name: 'Added to Queue',
-    value: `[${title}](${args[0]})`,
-  });
+  logger.info(`Queued ${title} for ${guild_id}.`);
+
+  const queueEmbed = new discord.MessageEmbed()
+    .setColor('#edca1a')
+    .setTitle('Added to Queue')
+    .setDescription(`[${title}](${video.url})`);
 
   message.inlineReply(queueEmbed);
 
   // add to guild's queue
   guildGlobal.queue.push({
     message: message,
-    audio: args,
+    audio: video.url,
     title: title,
     isPredefined: false,
   });
 
   // if there is nothing in the queue besides itself, go ahead and play it
   if (guildGlobal.queue.length === 1) {
-    playAudio(message, args, false);
+    playAudio(message.guild.id);
   }
 };
 
@@ -242,30 +251,29 @@ const queueAudio = async (message, args, isPredefined) => {
     return;
   }
 
-  let title = null;
   const query = args.join(' ');
   // check to see if it is a playlist
   if (ytpl.validateID(query)) {
     queuePlaylist(message, args, guildGlobal);
     return;
-  } else if (isPredefined) {
-    title = args[0];
-  } else {
+  } else if (!isPredefined) {
     queueYoutubeVideo(message, args, guildGlobal);
     return;
   }
 
+  let title = args[0];
+  logger.info(`Queued ${title} for ${guild_id}.`);
   // add to guild's queue
   guildGlobal.queue.push({
     message: message,
-    audio: args,
+    audio: args[0],
     title: title,
     isPredefined: isPredefined,
   });
 
   // if there is nothing in the queue besides itself, go ahead and play it
   if (guildGlobal.queue.length === 1) {
-    playAudio(message, args, isPredefined);
+    playAudio(message.guild.id);
   }
 };
 

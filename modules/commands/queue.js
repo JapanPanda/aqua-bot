@@ -14,6 +14,12 @@ module.exports = {
     const queueEmbed = getQueueEmbed(args, guild_id);
 
     message.channel.send(queueEmbed).then(async (sentMessage) => {
+      if (
+        globals.guilds[guild_id] === undefined ||
+        globals.guilds[guild_id].queue.length === 0
+      ) {
+        return;
+      }
       await sentMessage.react('⬅️');
       await sentMessage.react('➡️');
     });

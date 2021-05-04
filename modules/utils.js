@@ -44,16 +44,12 @@ const getQueueEmbed = (args, guild_id) => {
     globals.guilds[guild_id] === undefined ||
     globals.guilds[guild_id].queue.length === 0
   ) {
-    const queueString = 'The queue is currently empty!';
     const queueEmbed = new discord.MessageEmbed()
       .setColor('#edca1a')
-      .addFields({
-        name: 'Current Queue',
-        value: '```' + queueString + '```',
-      });
+      .setTitle('Current Queue')
+      .setDescription('The queue is currently empty!');
 
-    message.channel.send(queueEmbed);
-    return;
+    return queueEmbed;
   }
 
   const guildGlobal = getGuildGlobals(guild_id);
@@ -84,10 +80,10 @@ const getQueueEmbed = (args, guild_id) => {
       return acc + `**${i + offset}**. ${ele.title}\n`;
     }
 
-    return acc + `**${i + offset}**. [${ele.title}](${ele.audio[0]})\n`;
+    return acc + `**${i + offset}**. [${ele.title}](${ele.audio})\n`;
   });
 
-  let currPlayString = `[${queue[0].title}](${queue[0].audio[0]})`;
+  let currPlayString = `[${queue[0].title}](${queue[0].audio})`;
 
   if (queue.length === 1 || queueString === '') {
     queueString = 'The queue is currently empty!';
@@ -109,7 +105,6 @@ const reactionHandler = async (reaction, user) => {
   await reaction.users.remove(user.id);
 
   if (reaction.message.embeds.length === 1) {
-    console.log(reaction.message.embeds[0]);
     const embed = reaction.message.embeds[0];
     if (embed.title === 'Queue') {
       let page = parseInt(embed.fields[2].value.split('/')[0]);

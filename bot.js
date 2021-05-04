@@ -59,7 +59,9 @@ client.on('voiceStateUpdate', (oldState, newState) => {
     oldState.channel.members.has(client.user.id)
   ) {
     const guildGlobal = getGuildGlobals(oldState.guild.id);
-    guildGlobal.connection.disconnect();
+    if (guildGlobal.connection !== null) {
+      guildGlobal.connection.disconnect();
+    }
     guildGlobal.connection = null;
     guildGlobal.dispatcher = null;
     guildGlobal.queue = [];
@@ -79,6 +81,10 @@ client.on('messageReactionAdd', async (reaction, user) => {
       logger.error(`Failed to retrieve message from cache.\n${err.stack}`);
       return;
     }
+  }
+
+  if (reaction.message.member.id !== client.user.id) {
+    return;
   }
 
   reactionHandler(reaction, user);
