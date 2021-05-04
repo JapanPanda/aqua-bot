@@ -32,12 +32,15 @@ const createDispatcher = (
   });
 
   dispatcher.on('finish', () => {
-    logger.info(`Finished playing ${title} for ${guild_id}!`);
+    logger.info(
+      `Finished playing ${guildGlobal.queue[0].title} for ${guild_id}!`
+    );
   });
 
   dispatcher.on('close', () => {
     logger.info('Dispatcher was closed');
     const guildGlobal = getGuildGlobals(guild_id);
+    const title = guildGlobal.queue[0].title;
     guildGlobal.queue.shift();
 
     if (guildGlobal.queue.length !== 0) {
