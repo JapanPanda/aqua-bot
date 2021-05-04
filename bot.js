@@ -14,7 +14,7 @@ require('./modules/redis');
 
 const { getGuildGlobals, reactionHandler } = require('./modules/utils');
 
-const prefix = '$';
+const prefix = '.';
 
 client.commands = new Discord.Collection();
 

@@ -1,16 +1,20 @@
 const logger = require('./logger');
 const discord = require('discord.js');
 const redisClient = require('./redis');
-
+const fs = require('fs');
 const globals = require('./globals');
 
-const ytdl = require('ytdl-core');
+const ytdl = require('discord-ytdl-core');
 const ytsr = require('ytsr');
 const ytpl = require('ytpl');
 
 const _ = require('lodash');
 
-const { getGuildSettings, getGuildGlobals } = require('./utils');
+const {
+  getGuildSettings,
+  getGuildGlobals,
+  createAnnounce,
+} = require('./utils');
 
 const createDispatcher = (
   audio,
@@ -42,10 +46,10 @@ const createDispatcher = (
   dispatcher.on('close', () => {
     logger.info('Dispatcher was closed');
     const guildGlobal = getGuildGlobals(guild_id);
-    const title = guildGlobal.queue[0].title;
     guildGlobal.queue.shift();
 
     if (guildGlobal.queue.length !== 0) {
+      const title = guildGlobal.queue[0].title;
       // queue next song
       logger.info(
         `Starting next song in the queue (${title}) for ${guild_id}.`
@@ -65,7 +69,9 @@ const createDispatcher = (
             if (guildGlobal.connection !== null) {
               guildGlobal.connection.disconnect();
             }
-            delete guildGlobal;
+
+            delete globals.guilds[guild_id];
+
             logger.info('Disconnected after 30 seconds.');
           }
         },
@@ -84,14 +90,42 @@ const playAudio = async (guild_id) => {
   const guildGlobal = getGuildGlobals(guild_id);
   const { message, audio, isPredefined, title } = guildGlobal.queue[0];
 
+  const guildSettings = await getGuildSettings(guild_id);
+
+  const { nightcore, bassboost, volume } = guildSettings;
+
   let audioData = null;
-  let audioOptions = {};
+  let audioOptions = { volume: volume };
 
   if (audio.includes('https://www.youtube.com/')) {
+    //    audioData = ytdl(audio, {
+    //      quality: 'highestaudio',
+    //      highWaterMark: 1 << 25,
+    //      filter: 'audioonly',
+    //    }).pipe(fs.createWriteStream('bass_boosted.mp3'));
+    // atempo=1.06,asetrate=44100*1.25
+    let encoder = '';
+
+    if (nightcore) {
+      if (encoder !== '') {
+        encoder += ',';
+      }
+      encoder += 'atempo=0.8,asetrate=44100*1.75';
+    }
+
+    if (bassboost !== 0) {
+      if (encoder !== '') {
+        encoder += ',';
+      }
+      encoder += `bass=g=${bassboost}:f=110:w=0.6`;
+    }
+
     audioData = ytdl(audio, {
-      quality: 'highestaudio',
-      highWaterMark: 1 << 25,
       filter: 'audioonly',
+      quality: 'highestaudio',
+      fmt: 'mp3',
+      highWaterMark: 1 << 25,
+      encoderArgs: ['-af', encoder],
     });
     audioOptions = {};
     if (audioData === undefined) {
@@ -100,10 +134,6 @@ const playAudio = async (guild_id) => {
   } else if (isPredefined) {
     audioData = `./assets/${audio}`;
   }
-
-  const guildSettings = getGuildSettings(guild_id);
-
-  const volume = guildSettings.volume;
 
   if (guildGlobal.connection === null) {
     if (message.member.voice.channel === null) {
@@ -118,11 +148,10 @@ const playAudio = async (guild_id) => {
   audioOptions[volume] = volume;
 
   if (!isPredefined) {
-    const nowPlayingEmbed = new discord.MessageEmbed()
-      .setColor('#edca1a')
-      .setTitle('Now Playing')
-      .setDescription(`[${title}](${audio})`);
-
+    const nowPlayingEmbed = createAnnounce(
+      'Now Playing',
+      `[${title}](${audio})`
+    );
     message.channel.send(nowPlayingEmbed);
   }
   createDispatcher(audio, audioData, audioOptions, connection, guild_id);
@@ -196,6 +225,7 @@ const queuePlaylist = async (message, args, guildGlobal) => {
 const queueYoutubeVideo = async (message, args, guildGlobal) => {
   // if it is not a playlist
   // TODO: maybe add the ability to choose which video when doing a query
+  const guild_id = message.guild.id;
   const query = args.join(' ');
   const srResults = await ytsr(query, { limit: 1 });
   if (srResults.results === 0) {

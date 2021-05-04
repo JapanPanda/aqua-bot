@@ -10,56 +10,54 @@ const {
 } = require('../utils');
 
 module.exports = {
-  name: 'volume',
-  description: 'Changes volume',
+  name: 'nightcore',
+  description: 'Changes nightcore setting.',
   async execute(message, args) {
     const guild_id = message.guild.id;
     let guildSettings = await getGuildSettings(guild_id);
 
-    const volume = guildSettings.volume;
+    const nightcore = guildSettings.nightcore;
+
     if (args.length === 0) {
       const embed = createAnnounce(
-        'Volume Setting',
-        `Sheesh, the current volume setting is: ${volume * 100}%.`
+        'Nightcore Setting',
+        `Sheesh, the current nightcore setting is: ${nightcore ? 'on' : 'off'}.`
       );
       message.inlineReply(embed);
     } else if (args.length === 1) {
-      const newVolume = parseFloat(args[0]) / 100;
+      const newNightcore = args[0];
 
-      if (isNaN(newVolume)) {
+      if (newNightcore !== 'on' && newNightcore !== 'off') {
         const embed = createAnnounce(
           'Incorrect Usage!',
-          `Incorrect usage of $volume.\nExample: $volume (50)\nWithout specifying the new volume to set it at, it'll state the current volume.`,
+          `Incorrect usage of $nightcore.\nExample: $nightcore on/off\nWithout specifying the new nightcore setting to set it at, it'll state the current nightcore setting.`,
           '#ffbaba'
         );
         message.inlineReply(embed);
         return;
       }
 
-      guildSettings.volume = newVolume;
+      guildSettings.nightcore = newNightcore === 'on';
 
       const guildGlobal = getGuildGlobals(guild_id);
-      if (guildGlobal.dispatcher !== null) {
-        guildGlobal.dispatcher.setVolume(guildSettings.volume);
-      }
 
       redisClient.set(guild_id, JSON.stringify(guildSettings), (err) => {
         if (err) {
-          logger.error(`Error setting volume.\n${err}`);
+          logger.error(`Error setting nightcore.\n${err}`);
           return;
         }
 
-        logger.info(`Modified volume for ${guild_id} to be ${args[0] / 100}`);
+        logger.info(`Modified nightcore for ${guild_id} to be ${nightcore}`);
       });
       const embed = createAnnounce(
-        'Volume Set Successfully!',
-        `Sheesh, set the volume setting to: ${args[0]}%.`
+        'Nightcore Set Successfully!',
+        `Sheesh, set the bassboost setting to: ${newNightcore}.`
       );
       message.inlineReply(embed);
     } else {
       const embed = createAnnounce(
         'Incorrect Usage!',
-        `Incorrect usage of $volume.\nExample: $volume (50)\nWithout specifying the new volume to set it at, it'll state the current volume.`,
+        `Incorrect usage of $nightcore.\nExample: $nightcore on/off\nWithout specifying the new nightcore setting to set it at, it'll state the current nightcore setting.`,
         '#ffbaba'
       );
       message.inlineReply(embed);

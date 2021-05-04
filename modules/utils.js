@@ -15,6 +15,11 @@ const createAnnounce = (title, description, color = '#edca1a') => {
 
 const getGuildSettings = async (guild_id) => {
   let guildSettings = await redisClient.getAsync(guild_id);
+  const validationSetting = {
+    volume: 0.5,
+    bassboost: 0,
+    nightcore: false,
+  };
 
   if (guildSettings === null) {
     guildSettings = {
@@ -32,6 +37,12 @@ const getGuildSettings = async (guild_id) => {
     });
   } else {
     guildSettings = JSON.parse(guildSettings);
+
+    for (const prop in validationSetting) {
+      if (!(prop in guildSettings)) {
+        guildSettings[prop] = validationSetting[prop];
+      }
+    }
   }
 
   return guildSettings;
@@ -60,7 +71,7 @@ const getQueueEmbed = (args, guild_id) => {
       .setTitle('Current Queue')
       .setDescription('The queue is currently empty!');
 
-    return queueEmbed;
+    return createAnnounce('Current Queue', 'The queue is currently empty!');
   }
 
   const guildGlobal = getGuildGlobals(guild_id);
@@ -136,4 +147,5 @@ module.exports = {
   getGuildSettings,
   getQueueEmbed,
   reactionHandler,
+  createAnnounce,
 };
