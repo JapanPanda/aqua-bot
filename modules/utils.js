@@ -4,12 +4,23 @@ const redisClient = require('./redis');
 
 const discord = require('discord.js');
 
+const createAnnounce = (title, description, color = '#edca1a') => {
+  const announceEmbed = new discord.MessageEmbed()
+    .setColor(color)
+    .setTitle(title)
+    .setDescription(description);
+
+  return announceEmbed;
+};
+
 const getGuildSettings = async (guild_id) => {
   let guildSettings = await redisClient.getAsync(guild_id);
 
   if (guildSettings === null) {
     guildSettings = {
       volume: 0.5,
+      bassboost: 0,
+      nightcore: false,
     };
     redisClient.set(guild_id, JSON.stringify(guildSettings), (err) => {
       if (err) {
