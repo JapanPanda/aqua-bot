@@ -99,12 +99,6 @@ const playAudio = async (guild_id) => {
   let audioOptions = { volume: volume, highWaterMark: 1 };
 
   if (audio.includes('https://www.youtube.com/')) {
-    //    audioData = ytdl(audio, {
-    //      quality: 'highestaudio',
-    //      highWaterMark: 1 << 25,
-    //      filter: 'audioonly',
-    //    }).pipe(fs.createWriteStream('bass_boosted.mp3'));
-    // atempo=1.06,asetrate=44100*1.25
     let encoder = '';
 
     if (nightcore) {
