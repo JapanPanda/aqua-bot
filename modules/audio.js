@@ -110,7 +110,7 @@ const createDispatcher = (
 
 const playAudio = async (guild_id) => {
   const guildGlobal = getGuildGlobals(guild_id);
-  const { message, audio, isPredefined } = guildGlobal.queue[0];
+  let { message, audio, isPredefined } = guildGlobal.queue[0];
   const { requester, title, duration, url } = guildGlobal.queue[0].meta;
   const guildSettings = await getGuildSettings(guild_id);
 
@@ -118,6 +118,21 @@ const playAudio = async (guild_id) => {
 
   let audioData = null;
   let audioOptions = { volume: volume, highWaterMark: 1 };
+
+  if (audio.includes('spotify')) {
+    // attempt to find the song on youtube
+    const srResults = await ytsr(title, { limit: 1 });
+
+    // rare edge case when there are no youtube videos on it
+    if (!srResults.items[0]) {
+      guildGlobal.queue.shift();
+      message.channel.send(`Could not play this Spotify song: ${title}.`);
+      playAudio(guild_id);
+      return;
+    }
+
+    audio = srResults.items[0].url;
+  }
 
   if (isYoutubeUrl(audio)) {
     let encoder = '';
@@ -482,13 +497,6 @@ const queueSpotifyTrack = async (message, args, guildGlobal, isNow) => {
 };
 
 const queueSpotifyPlaylist = async (message, args, guildGlobal, isNow) => {
-  const sentMessage = await message.inlineReply(
-    createAnnounce(
-      'Processing Spotify Playlist',
-      'Please wait a little bit, Spotify playlists take some time! Use Youtube playlists for faster results.'
-    )
-  );
-
   const tracks = await getSpotifyPlaylistMeta(args[0]);
 
   let durationSeconds = 0;
@@ -504,17 +512,13 @@ const queueSpotifyPlaylist = async (message, args, guildGlobal, isNow) => {
 
     let title = track.name + ' - ' + artistString;
 
-    // attempt to find the song on youtube
-    const srResults = await ytsr(title, { limit: 1 });
-
-    if (!srResults.items[0]) {
-      continue;
-    }
-
-    const audioUrl = srResults.items[0].url;
-    const duration = srResults.items[0].duration;
-    durationSeconds += convertISOToSeconds(duration);
-    const string = `**${i + 1}.** [${title}](${url}) (${duration})\n`;
+    const audioUrl = url;
+    const duration = track.duration_ms / 1000;
+    const durationString = trimDurationString(
+      new Date(track.duration_ms).toISOString().substr(11, 8)
+    );
+    durationSeconds += duration;
+    const string = `**${i + 1}.** [${title}](${url}) (${durationString})\n`;
     if ((queueString + string).length < 1021) {
       queueString += string;
     } else {
@@ -523,7 +527,7 @@ const queueSpotifyPlaylist = async (message, args, guildGlobal, isNow) => {
 
     const meta = {
       title: title,
-      duration: duration,
+      duration: durationString,
       url: url,
       requester: message.author,
     };
@@ -558,7 +562,7 @@ const queueSpotifyPlaylist = async (message, args, guildGlobal, isNow) => {
     queueEmbed.setFooter(playbackSettingString);
   }
 
-  sentMessage.edit(queueEmbed);
+  message.inlineReply(queueEmbed);
 
   if (shouldPlay) {
     const { shuffle } = await getGuildSettings(guild_id);
