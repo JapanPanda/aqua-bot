@@ -9,7 +9,7 @@ module.exports = {
     if (args.length === 0) {
       const embed = createAnnounce(
         'Incorrect Usage',
-        'Incorrect usage, $play [youtube link or search query]',
+        'Incorrect usage, $now [youtube link or search query]',
         '#ffbaba'
       );
       message.inlineReply(embed);
