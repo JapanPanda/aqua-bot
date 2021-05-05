@@ -79,6 +79,9 @@ const getSongString = (ele) => {
 };
 
 const convertISOToSeconds = (isoTime) => {
+  if (isoTime === 'N/A') {
+    return 0;
+  }
   // thanks to https://stackoverflow.com/questions/9640266/convert-hhmmss-string-to-seconds-only-in-javascript
   var p = isoTime.split(':'),
     s = 0,
