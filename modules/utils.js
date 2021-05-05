@@ -165,7 +165,6 @@ const getQueueEmbed = async (args, guild_id) => {
   if (playbackSettingString !== '') {
     queueEmbed.setFooter(playbackSettingString);
   }
-
   return queueEmbed;
 };
 
@@ -225,7 +224,7 @@ const reactionHandler = async (reaction, user) => {
         page = page + 1;
       }
 
-      const queueEmbed = getQueueEmbed([page], reaction.message.guild.id);
+      const queueEmbed = await getQueueEmbed([page], reaction.message.guild.id);
       reaction.message.edit(queueEmbed);
     }
   }
@@ -243,4 +242,5 @@ module.exports = {
   getSpotifyPlaylistMeta,
   convertISOToSeconds,
   isYoutubeUrl,
+  getSongString,
 };
