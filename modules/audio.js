@@ -66,6 +66,11 @@ const createDispatcher = (
           ? 0
           : Math.floor(Math.random() * guildGlobal.queue.length);
 
+      // sometimes theres a bug when nextindex goes out of bound
+      if (nextIndex >= guildGlobal.queue.length) {
+        nextIndex = 0;
+      }
+
       const title = guildGlobal.queue[nextIndex].meta.title;
       // queue next song
       logger.info(
@@ -131,8 +136,10 @@ const playAudio = async (guild_id) => {
       encoder += `bass=g=${bassboost}:f=110:w=0.6`;
     }
 
-    if (audio.includes('?t=')) {
-      let timeStamp = audio.split('?t=')[1].split('?')[0];
+    if (audio.includes('&t=') || audio.includes('?t=')) {
+      let sep = audio.includes('&t=') ? '&t=' : '?t=';
+
+      let timeStamp = audio.split(sep)[1].split('&')[0];
       audioOptions.seek = parseInt(timeStamp);
     }
 
@@ -162,13 +169,18 @@ const playAudio = async (guild_id) => {
 
   const connection = guildGlobal.connection;
 
-  audioOptions[volume] = volume;
-
   if (!isPredefined) {
-    const nowPlayingEmbed = createAnnounce(
-      'Now Playing',
-      `[${title}](${url}) (${duration}) [${requester}]`
-    );
+    let announceString = `[${title}](${url}) (${duration}) [${requester}]`;
+    if (audioOptions.seek) {
+      let timeStamp = new Date(audioOptions.seek * 1000)
+        .toISOString()
+        .substr(11, 8);
+      console.log(timeStamp);
+      announceString += ` Timestamp: ${trimDurationString(
+        timeStamp
+      )}\nThere may be some delay since it's seeking to a timestamp.`;
+    }
+    const nowPlayingEmbed = createAnnounce('Now Playing', announceString);
     const playbackSettingString = await getPlaybackSettingsString(guild_id);
     if (playbackSettingString !== '') {
       nowPlayingEmbed.setFooter(playbackSettingString);
@@ -265,6 +277,11 @@ const queueYoutubePlaylist = async (message, args, guildGlobal, isNow) => {
     message.inlineReply(queueEmbed);
 
     if (shouldPlay) {
+      const { shuffle } = await getGuildSettings(guild_id);
+      if (shuffle) {
+        const randIndex = Math.floor(Math.random() * guildGlobal.queue.length);
+        guildGlobal.queue.unshift(guildGlobal.queue.splice(randIndex, 1)[0]);
+      }
       playAudio(message.guild.id);
     }
   } catch (err) {
@@ -545,6 +562,11 @@ const queueSpotifyPlaylist = async (message, args, guildGlobal, isNow) => {
   sentMessage.edit(queueEmbed);
 
   if (shouldPlay) {
+    const { shuffle } = await getGuildSettings(guild_id);
+    if (shuffle) {
+      const randIndex = Math.floor(Math.random() * guildGlobal.queue.length);
+      guildGlobal.queue.unshift(guildGlobal.queue.splice(randIndex, 1)[0]);
+    }
     playAudio(message.guild.id);
   }
 };
