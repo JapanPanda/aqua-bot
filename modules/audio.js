@@ -136,12 +136,12 @@ const playAudio = async (guild_id) => {
       encoder += `bass=g=${bassboost}:f=110:w=0.6`;
     }
 
-    if (audio.includes('&t=') || audio.includes('?t=')) {
-      let sep = audio.includes('&t=') ? '&t=' : '?t=';
-
-      let timeStamp = audio.split(sep)[1].split('&')[0];
-      audioOptions.seek = parseInt(timeStamp);
-    }
+    //    if (audio.includes('&t=') || audio.includes('?t=')) {
+    //      let sep = audio.includes('&t=') ? '&t=' : '?t=';
+    //
+    //      let timeStamp = audio.split(sep)[1].split('&')[0];
+    //      audioOptions.seek = parseInt(timeStamp);
+    //    }
 
     audioData = ytdl(audio, {
       filter: 'audioonly',
@@ -175,7 +175,6 @@ const playAudio = async (guild_id) => {
       let timeStamp = new Date(audioOptions.seek * 1000)
         .toISOString()
         .substr(11, 8);
-      console.log(timeStamp);
       announceString += ` Timestamp: ${trimDurationString(
         timeStamp
       )}\nThere may be some delay since it's seeking to a timestamp.`;
