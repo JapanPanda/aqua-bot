@@ -5,6 +5,8 @@ It's just a fun bot for me and some friends.
 Currently, it can function as a music bot for Youtube videos.
 
 # Available Commands
+- Loop [off/on/all] - Loops either a single song or the whole queue.
+- Shuffle [on/off] - Shuffles the queue.
 - Nightcore [on/off] - Turn on/off nightcore.
 - Bassboost [5 (db units)] - Increase the bassboost.
 - Play [song or search query] - Plays a youtube link in the voice channel.

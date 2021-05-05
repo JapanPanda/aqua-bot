@@ -11,8 +11,7 @@ module.exports = {
   async execute(message, args) {
     const guild_id = message.guild.id;
 
-    const queueEmbed = getQueueEmbed(args, guild_id);
-
+    const queueEmbed = await getQueueEmbed(args, guild_id);
     message.channel.send(queueEmbed).then(async (sentMessage) => {
       if (
         globals.guilds[guild_id] === undefined ||

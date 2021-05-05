@@ -40,6 +40,10 @@ client.on('message', (message) => {
   if (!client.commands.has(command)) return;
 
   try {
+    if (!message.guild.me.hasPermission(36710400)) {
+      message.inlineReply('I need permission to manage messages!');
+      return;
+    }
     client.commands.get(command).execute(message, args);
   } catch (error) {
     logger.error(error);

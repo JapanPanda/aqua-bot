@@ -1,7 +1,8 @@
 const globals = require('./globals');
-
+const logger = require('./logger');
 const redisClient = require('./redis');
 
+const { getData, getTracks } = require('spotify-url-info');
 const discord = require('discord.js');
 
 const createAnnounce = (title, description, color = '#edca1a') => {
@@ -19,14 +20,12 @@ const getGuildSettings = async (guild_id) => {
     volume: 0.5,
     bassboost: 0,
     nightcore: false,
+    loop: 'off',
+    shuffle: false,
   };
 
   if (guildSettings === null) {
-    guildSettings = {
-      volume: 0.5,
-      bassboost: 0,
-      nightcore: false,
-    };
+    guildSettings = validationSetting;
     redisClient.set(guild_id, JSON.stringify(guildSettings), (err) => {
       if (err) {
         logger.error(err);
@@ -75,11 +74,11 @@ const getSongString = (ele) => {
     return `${ele.meta.title} [${ele.meta.requester}]`;
   }
 
-  return `[${ele.meta.title}](${ele.audio}) (${ele.meta.duration}) [${ele.meta.requester}]`;
+  return `[${ele.meta.title}](${ele.meta.url}) (${ele.meta.duration}) [${ele.meta.requester}]`;
 };
 
 const convertISOToSeconds = (isoTime) => {
-  if (isoTime === 'N/A') {
+  if (isoTime === null) {
     return 0;
   }
   // thanks to https://stackoverflow.com/questions/9640266/convert-hhmmss-string-to-seconds-only-in-javascript
@@ -95,7 +94,7 @@ const convertISOToSeconds = (isoTime) => {
   return s;
 };
 
-const getQueueEmbed = (args, guild_id) => {
+const getQueueEmbed = async (args, guild_id) => {
   // empty queue
   if (
     globals.guilds[guild_id] === undefined ||
@@ -106,6 +105,10 @@ const getQueueEmbed = (args, guild_id) => {
       .setTitle('Current Queue')
       .setDescription('The queue is currently empty!');
 
+    const playbackSettingString = await getPlaybackSettingsString(guild_id);
+    if (playbackSettingString !== '') {
+      queueEmbed.setFooter(playbackSettingString);
+    }
     return createAnnounce('Current Queue', 'The queue is currently empty!');
   }
 
@@ -158,7 +161,55 @@ const getQueueEmbed = (args, guild_id) => {
       { name: 'Page', value: `${page}/${maxPages}` }
     );
 
+  const playbackSettingString = await getPlaybackSettingsString(guild_id);
+  if (playbackSettingString !== '') {
+    queueEmbed.setFooter(playbackSettingString);
+  }
+
   return queueEmbed;
+};
+
+const getPlaybackSettingsString = async (guild_id) => {
+  const guildSettings = await getGuildSettings(guild_id);
+  const { nightcore, bassboost, loop, shuffle } = guildSettings;
+
+  let string = '';
+
+  if (loop === 'all') {
+    string += 'Loop All, ';
+  } else if (loop === 'on') {
+    string += 'Loop, ';
+  }
+
+  if (shuffle) {
+    string += 'Shuffle, ';
+  }
+
+  if (nightcore) {
+    string += 'Nightcore, ';
+  }
+
+  if (bassboost !== 0) {
+    string += `Bassboost ${bassboost} dB, `;
+  }
+
+  return string.substring(0, string.length - 2);
+};
+
+const isYoutubeUrl = (link) => {
+  return link.includes('youtube.com') || link.includes('youtu.be');
+};
+
+const getSpotifyId = (link) => {
+  return link.split('/track/')[1].split('?')[0];
+};
+
+const getSpotifyTrackMeta = async (link) => {
+  return await getData(link);
+};
+
+const getSpotifyPlaylistMeta = async (link) => {
+  return await getTracks(link);
 };
 
 const reactionHandler = async (reaction, user) => {
@@ -187,5 +238,9 @@ module.exports = {
   reactionHandler,
   createAnnounce,
   trimDurationString,
-  getSongString,
+  getPlaybackSettingsString,
+  getSpotifyTrackMeta,
+  getSpotifyPlaylistMeta,
+  convertISOToSeconds,
+  isYoutubeUrl,
 };
