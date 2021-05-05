@@ -60,6 +60,38 @@ const getGuildGlobals = (guild_id) => {
   return globals.guilds[guild_id];
 };
 
+const trimDurationString = (duration) => {
+  let durationString = duration;
+  let split = durationString.split(':');
+  if (split.length === 3 && split[0] == '00') {
+    durationString = split.slice(1).join(':');
+  }
+
+  return durationString;
+};
+
+const getSongString = (ele) => {
+  if (ele.isPredefined) {
+    return `${ele.meta.title} [${ele.meta.requester}]`;
+  }
+
+  return `[${ele.meta.title}](${ele.audio}) (${ele.meta.duration}) [${ele.meta.requester}]`;
+};
+
+const convertISOToSeconds = (isoTime) => {
+  // thanks to https://stackoverflow.com/questions/9640266/convert-hhmmss-string-to-seconds-only-in-javascript
+  var p = isoTime.split(':'),
+    s = 0,
+    m = 1;
+
+  while (p.length > 0) {
+    s += m * parseInt(p.pop(), 10);
+    m *= 60;
+  }
+
+  return s;
+};
+
 const getQueueEmbed = (args, guild_id) => {
   // empty queue
   if (
@@ -82,7 +114,7 @@ const getQueueEmbed = (args, guild_id) => {
   let page =
     args.length !== 0 && parseInt(args[0]) !== NaN ? parseInt(args[0]) : 1;
 
-  const maxPages = Math.ceil(queue.length / 5);
+  const maxPages = Math.ceil((queue.length - 1) / 5);
 
   if (page > maxPages) {
     page = maxPages;
@@ -98,25 +130,28 @@ const getQueueEmbed = (args, guild_id) => {
       acc = '';
     }
 
-    if (ele.isPredefined) {
-      return acc + `**${i + offset}**. ${ele.title}\n`;
-    }
-
-    return acc + `**${i + offset}**. [${ele.title}](${ele.audio})\n`;
+    return acc + `**${i + offset}**. ${getSongString(ele)}\n`;
   });
 
-  let currPlayString = `[${currSong.title}](${currSong.audio})`;
+  let currPlayString = getSongString(currSong);
 
   if (queue.length === 1 || queueString === '') {
     queueString = 'The queue is currently empty!';
   }
+
+  let durationSeconds = guildGlobal.queue
+    .map((ele) => convertISOToSeconds(ele.meta.duration))
+    .reduce((acc, ele) => acc + ele);
+
+  let totalTime = new Date(durationSeconds * 1000).toISOString().substr(11, 8);
+  totalTime = trimDurationString(totalTime);
 
   const queueEmbed = new discord.MessageEmbed()
     .setColor('#edca1a')
     .setTitle('Queue')
     .addFields(
       { name: 'Currently Playing', value: currPlayString },
-      { name: 'Current Queue', value: queueString },
+      { name: `Current Queue (${totalTime})`, value: queueString },
       { name: 'Page', value: `${page}/${maxPages}` }
     );
 
@@ -148,4 +183,6 @@ module.exports = {
   getQueueEmbed,
   reactionHandler,
   createAnnounce,
+  trimDurationString,
+  getSongString,
 };

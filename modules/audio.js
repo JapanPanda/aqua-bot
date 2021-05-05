@@ -14,6 +14,7 @@ const {
   getGuildSettings,
   getGuildGlobals,
   createAnnounce,
+  trimDurationString,
 } = require('./utils');
 
 const createDispatcher = (
@@ -31,7 +32,7 @@ const createDispatcher = (
     guildGlobal.dispatcher = dispatcher;
 
     logger.info(
-      `Started to play ${guildGlobal.queue[0].title} for ${guild_id}`
+      `Started to play ${guildGlobal.queue[0].meta.title} for ${guild_id}`
     );
   });
 
@@ -39,7 +40,7 @@ const createDispatcher = (
     const guildGlobal = getGuildGlobals(guild_id);
 
     logger.info(
-      `Finished playing ${guildGlobal.queue[0].title} for ${guild_id}!`
+      `Finished playing ${guildGlobal.queue[0].meta.title} for ${guild_id}!`
     );
   });
 
@@ -49,7 +50,7 @@ const createDispatcher = (
     guildGlobal.queue.shift();
 
     if (guildGlobal.queue.length !== 0) {
-      const title = guildGlobal.queue[0].title;
+      const title = guildGlobal.queue[0].meta.title;
       // queue next song
       logger.info(
         `Starting next song in the queue (${title}) for ${guild_id}.`
@@ -88,14 +89,14 @@ const createDispatcher = (
 
 const playAudio = async (guild_id) => {
   const guildGlobal = getGuildGlobals(guild_id);
-  const { message, audio, isPredefined, title } = guildGlobal.queue[0];
-
+  const { message, audio, isPredefined } = guildGlobal.queue[0];
+  const { requester, title, duration } = guildGlobal.queue[0].meta;
   const guildSettings = await getGuildSettings(guild_id);
 
   const { nightcore, bassboost, volume } = guildSettings;
 
   let audioData = null;
-  let audioOptions = { volume: volume };
+  let audioOptions = { volume: volume, highWaterMark: 1 };
 
   if (audio.includes('https://www.youtube.com/')) {
     //    audioData = ytdl(audio, {
@@ -125,9 +126,9 @@ const playAudio = async (guild_id) => {
       quality: 'highestaudio',
       fmt: 'mp3',
       highWaterMark: 1 << 25,
-      encoderArgs: ['-af', encoder],
+      encoderArgs: encoder === '' ? null : ['-af', encoder],
     });
-    audioOptions = {};
+
     if (audioData === undefined) {
       logger.error('Invalid youtube link!');
     }
@@ -150,14 +151,14 @@ const playAudio = async (guild_id) => {
   if (!isPredefined) {
     const nowPlayingEmbed = createAnnounce(
       'Now Playing',
-      `[${title}](${audio})`
+      `[${title}](${audio}) (${duration}) [${requester}]`
     );
     message.channel.send(nowPlayingEmbed);
   }
   createDispatcher(audio, audioData, audioOptions, connection, guild_id);
 };
 
-const queuePlaylist = async (message, args, guildGlobal) => {
+const queuePlaylist = async (message, args, guildGlobal, isNow) => {
   try {
     const query = args.join(' ');
     const playlistId = await ytpl.getPlaylistID(query);
@@ -165,15 +166,25 @@ const queuePlaylist = async (message, args, guildGlobal) => {
     logger.info(`Queued the playlist ${playlistResult.title}`);
     const shouldPlay = guildGlobal.queue.length === 0;
     let fitAll = true;
+
+    // calculate the duration
+    let durationSeconds = playlistResult.items
+      .map((ele) => ele.durationSec)
+      .reduce((acc, ele) => acc + ele);
+
+    let totalTime = new Date(durationSeconds * 1000)
+      .toISOString()
+      .substr(11, 8);
+
+    totalTime = trimDurationString(totalTime);
+
     let queueString = playlistResult.items.reduce((acc, ele, i) => {
       if (i === 1) {
-        acc = `**${guildGlobal.queue.length + i}.** [${acc.title}](${
-          acc.shortUrl
-        })\n`;
+        acc = `**${i}.** [${acc.title}](${acc.shortUrl}) (${ele.duration})\n`;
       }
 
-      const string = `**${guildGlobal.queue.length + i + 1}.** [${ele.title}](${
-        ele.shortUrl
+      const string = `**${i + 1}.** [${ele.title}](${ele.shortUrl}) (${
+        ele.duration
       })\n`;
 
       if (acc.length + string.length > 1021) {
@@ -187,26 +198,43 @@ const queuePlaylist = async (message, args, guildGlobal) => {
     if (playlistResult.items.length === 1) {
       queueString = `**${guildGlobal.queue.length + i}.** [${ele.title}](${
         ele.shortUrl
-      })\n`;
+      }) (${ele.duration})\n`;
     }
 
     if (!fitAll) {
       queueString += '...';
     }
 
-    for (const ele of playlistResult.items) {
-      guildGlobal.queue.push({
-        message: message,
-        audio: ele.shortUrl,
+    for (const [i, ele] of playlistResult.items.entries()) {
+      const meta = {
         title: ele.title,
-        isPredefined: false,
-      });
+        duration: ele.duration,
+        requester: message.author,
+      };
+
+      if (isNow) {
+        guildGlobal.queue.splice(1 + i, 0, {
+          message: message,
+          audio: ele.shortUrl,
+          meta: meta,
+          isPredefined: false,
+        });
+      } else {
+        guildGlobal.queue.push({
+          message: message,
+          audio: ele.shortUrl,
+          meta: meta,
+          isPredefined: false,
+        });
+      }
     }
 
     const queueEmbed = new discord.MessageEmbed()
       .setColor('#edca1a')
       .setTitle(`Added ${playlistResult.items.length} videos to the queue`)
-      .setDescription(queueString);
+      .setDescription(queueString)
+      .addField('Total Time', `${totalTime}`)
+      .addField('Requested by', `[${message.author}]`);
 
     message.inlineReply(queueEmbed);
 
@@ -222,44 +250,77 @@ const queuePlaylist = async (message, args, guildGlobal) => {
   }
 };
 
-const queueYoutubeVideo = async (message, args, guildGlobal) => {
+const queueYoutubeVideo = async (message, args, guildGlobal, isNow) => {
   // if it is not a playlist
   // TODO: maybe add the ability to choose which video when doing a query
   const guild_id = message.guild.id;
-  const query = args.join(' ');
-  const srResults = await ytsr(query, { limit: 1 });
-  if (srResults.results === 0) {
-    message.inlineReply('Invalid youtube link!');
-    return;
-  }
+  let title = null;
+  let duration = null;
+  let url = null;
+  if (args.length === 1 && args[0].includes('https://www.youtube.com')) {
+    try {
+      const info = await ytdl.getBasicInfo(args[0]);
+      duration = new Date(info.videoDetails.lengthSeconds * 1000)
+        .toISOString()
+        .substr(11, 8);
+      url = info.videoDetails.video_url;
+      title = info.videoDetails.title;
+    } catch (err) {
+      logger.error(`Error retrieving data for ${args[0]}.`);
+      // TODO maybe make it an embed reply
+      message.inlineReply('Invalid youtube link!');
+      return;
+    }
+  } else {
+    const query = args.join(' ');
+    const srResults = await ytsr(query, { limit: 1 });
 
-  const video = srResults.items[0];
-  title = video.title;
-  if (
-    args.length === 1 &&
-    args[0].includes('https://www.youtube.com') &&
-    video.url !== args[0]
-  ) {
-    message.inlineReply('Invalid youtube link!');
-    return;
+    if (srResults.results === 0) {
+      message.inlineReply('Invalid youtube link!');
+      return;
+    }
+
+    const video = srResults.items[0];
+    title = video.title;
+    duration = video.duration;
+    url = video.url;
   }
 
   logger.info(`Queued ${title} for ${guild_id}.`);
 
+  let durationString = trimDurationString(duration);
+
   const queueEmbed = new discord.MessageEmbed()
     .setColor('#edca1a')
     .setTitle('Added to Queue')
-    .setDescription(`[${title}](${video.url})`);
+    .setDescription(
+      `[${title}](${url}) (${durationString}) [${message.author}]`
+    );
 
   message.inlineReply(queueEmbed);
 
-  // add to guild's queue
-  guildGlobal.queue.push({
-    message: message,
-    audio: video.url,
+  const meta = {
     title: title,
-    isPredefined: false,
-  });
+    duration: durationString,
+    requester: message.author,
+  };
+  if (isNow) {
+    // add to guild's queue
+    guildGlobal.queue.splice(1, 0, {
+      message: message,
+      audio: url,
+      meta: meta,
+      isPredefined: false,
+    });
+  } else {
+    // add to guild's queue
+    guildGlobal.queue.push({
+      message: message,
+      audio: url,
+      meta: meta,
+      isPredefined: false,
+    });
+  }
 
   // if there is nothing in the queue besides itself, go ahead and play it
   if (guildGlobal.queue.length === 1) {
@@ -267,7 +328,7 @@ const queueYoutubeVideo = async (message, args, guildGlobal) => {
   }
 };
 
-const queueAudio = async (message, args, isPredefined) => {
+const queueAudio = async (message, args, isPredefined, isNow) => {
   // user isn't in a voice channel
   if (!message.member.voice.channel) {
     message.inlineReply('Sheeeesh, get in a voice channel first!');
@@ -292,23 +353,37 @@ const queueAudio = async (message, args, isPredefined) => {
   const query = args.join(' ');
   // check to see if it is a playlist
   if (ytpl.validateID(query)) {
-    queuePlaylist(message, args, guildGlobal);
+    queuePlaylist(message, args, guildGlobal, isNow);
     return;
   } else if (!isPredefined) {
-    queueYoutubeVideo(message, args, guildGlobal);
+    queueYoutubeVideo(message, args, guildGlobal, isNow);
     return;
   }
 
   let title = args[0];
   logger.info(`Queued ${title} for ${guild_id}.`);
-  // add to guild's queue
-  guildGlobal.queue.push({
-    message: message,
-    audio: args[0],
+  const meta = {
     title: title,
-    isPredefined: isPredefined,
-  });
+    duration: 'N/A',
+    requester: message.author,
+  };
 
+  if (isNow) {
+    guildGlobal.queue.splice(1, 0, {
+      message: message,
+      audio: args[0],
+      meta: meta,
+      isPredefined: isPredefined,
+    });
+  } else {
+    // add to guild's queue
+    guildGlobal.queue.push({
+      message: message,
+      audio: args[0],
+      meta: meta,
+      isPredefined: isPredefined,
+    });
+  }
   // if there is nothing in the queue besides itself, go ahead and play it
   if (guildGlobal.queue.length === 1) {
     playAudio(message.guild.id);

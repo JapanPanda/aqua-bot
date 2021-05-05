@@ -51,7 +51,7 @@ module.exports = {
       });
       const embed = createAnnounce(
         'Nightcore Set Successfully!',
-        `Sheesh, set the bassboost setting to: ${newNightcore}.`
+        `Sheesh, set the nightcore setting to: ${newNightcore}.`
       );
       message.inlineReply(embed);
     } else {
