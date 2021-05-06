@@ -40,15 +40,18 @@ client.on('message', (message) => {
   if (command === 'activity' && message.author.id === process.env.DEV_ID) {
     let type = args[0];
     let text = args.slice(1).join(' ');
+    logger.info(`Set new activity ${type} ${text}`);
     client.user.setActivity(text, { type: type });
     return;
   } else if (command == 'avatar' && message.author.id === process.env.DEV_ID) {
+    logger.info(`Set new avatar ${args[0]}`);
     client.user.setAvatar(args[0]);
     return;
   } else if (
     command === 'username' &&
     message.author.id === process.env.DEV_ID
   ) {
+    logger.info(`Set new username ${args.join(' ')}`);
     client.user.setUsername(args.join(' '));
     return;
   }
