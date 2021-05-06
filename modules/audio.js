@@ -54,7 +54,8 @@ const createDispatcher = (
     const guildGlobal = getGuildGlobals(guild_id);
     const guildSettings = await getGuildSettings(guild_id);
     const { shuffle, loop } = guildSettings;
-    if (loop === 'off') {
+
+    if (loop === 'off' && !guildGlobal.restart) {
       guildGlobal.queue.shift();
     } else if (loop === 'all') {
       guildGlobal.queue.push(guildGlobal.queue.shift());
@@ -62,10 +63,11 @@ const createDispatcher = (
 
     if (guildGlobal.queue.length !== 0) {
       let nextIndex =
-        !shuffle || loop === 'on'
+        !shuffle || loop === 'on' || guildGlobal.restart
           ? 0
           : Math.floor(Math.random() * guildGlobal.queue.length);
 
+      guildGlobal.restart = false;
       // sometimes theres a bug when nextindex goes out of bound
       if (nextIndex >= guildGlobal.queue.length) {
         nextIndex = 0;

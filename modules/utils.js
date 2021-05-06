@@ -53,6 +53,7 @@ const getGuildGlobals = (guild_id) => {
       queue: [],
       dispatcher: null,
       connection: null,
+      restart: false,
     };
   }
 
