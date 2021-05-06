@@ -42,6 +42,9 @@ client.on('message', (message) => {
     let text = args.slice(1).join(' ');
     client.user.setActivity(text, { type: type });
     return;
+  } else if (command == 'avatar' && message.author.id === process.env.DEV_ID) {
+    client.user.setAvatar(args[0]);
+    return;
   }
 
   if (!client.commands.has(command)) return;
