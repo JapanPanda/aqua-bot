@@ -1,5 +1,5 @@
 .env
 *.log
 dump.rdb
-
+*pong*
 node_modules
