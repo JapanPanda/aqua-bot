@@ -11,7 +11,8 @@ const {
 
 module.exports = {
   name: 'shuffle',
-  description: 'Changes shuffle setting.',
+  description: 'Changes the shuffle setting.',
+  usage: '.shuffle [off/on]',
   async execute(message, args) {
     const guild_id = message.guild.id;
     let guildSettings = await getGuildSettings(guild_id);

@@ -5,6 +5,8 @@ const { getGuildGlobals } = require('../utils');
 module.exports = {
   name: 'skip',
   description: 'Skips songs in the queue.',
+  usage:
+    '.skip - Skips the current song.\n.skip 3 - Skips the next three songs in the queue (including the currently playing song).',
   async execute(message, args) {
     const guild_id = message.guild.id;
 

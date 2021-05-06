@@ -11,7 +11,9 @@ const {
 
 module.exports = {
   name: 'bassboost',
-  description: 'Changes bassboost setting.',
+  description: 'Changes the bassboost setting.',
+  usage:
+    '.bassboost - Displays the current bassboost setting.\n.bassboost 5 - Increases the bass by 5 dB.\n.bassboost -5 - Decreases the bass by 5 dB.',
   async execute(message, args) {
     const guild_id = message.guild.id;
     let guildSettings = await getGuildSettings(guild_id);

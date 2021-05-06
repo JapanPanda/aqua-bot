@@ -12,6 +12,8 @@ const {
 module.exports = {
   name: 'nightcore',
   description: 'Changes nightcore setting.',
+  usage:
+    '.nightcore - Displays the current nightcore setting.\n.nightcore [off/on]',
   async execute(message, args) {
     const guild_id = message.guild.id;
     let guildSettings = await getGuildSettings(guild_id);

@@ -11,7 +11,9 @@ const {
 
 module.exports = {
   name: 'loop',
-  description: 'Changes loop setting.',
+  description:
+    'Changes the loop setting. Three modes, off (no looping), on (loops the current song), and all (loops the entire queue).',
+  usage: '.loop [off/on/all]',
   async execute(message, args) {
     const guild_id = message.guild.id;
     let guildSettings = await getGuildSettings(guild_id);

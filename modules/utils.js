@@ -4,6 +4,7 @@ const redisClient = require('./redis');
 
 const { getData, getTracks } = require('spotify-url-info');
 const discord = require('discord.js');
+const fs = require('fs');
 
 const createAnnounce = (title, description, color = '#edca1a') => {
   const announceEmbed = new discord.MessageEmbed()
@@ -169,6 +170,45 @@ const getQueueEmbed = async (args, guild_id) => {
   return queueEmbed;
 };
 
+const getHelpEmbed = (args) => {
+  let helpEmbed = new discord.MessageEmbed();
+  helpEmbed.setColor('#edca1a').setTitle('Help Has Arrived');
+  const commandFiles = fs
+    .readdirSync('./modules/commands')
+    .filter((file) => file.endsWith('.js'));
+  let helpString = '';
+
+  const page = !args[0] ? 1 : parseInt(args[0]);
+  const maxPages = Math.ceil(commandFiles.length / 5);
+
+  if (page < 1) {
+    page = 1;
+  } else if (page > maxPages) {
+    page = maxPages;
+  }
+
+  const offset = (page - 1) * 5;
+  for (const commandFile of commandFiles.slice(offset, offset + 5)) {
+    const requireString = `./commands/${commandFile}`;
+    const command = require(requireString);
+    const { name, description, dev, usage } = command;
+
+    if (dev) {
+      continue;
+    }
+
+    let string = `**.${name}** - ${description}\n`;
+    if (usage) {
+      string += `${usage}\n`;
+    }
+
+    helpString += string + '\n';
+  }
+
+  helpEmbed.setDescription(helpString).addField('Page', `${page}/${maxPages}`);
+  return helpEmbed;
+};
+
 const getPlaybackSettingsString = async (guild_id) => {
   const guildSettings = await getGuildSettings(guild_id);
   const { nightcore, bassboost, loop, shuffle } = guildSettings;
@@ -227,6 +267,16 @@ const reactionHandler = async (reaction, user) => {
 
       const queueEmbed = await getQueueEmbed([page], reaction.message.guild.id);
       reaction.message.edit(queueEmbed);
+    } else if (embed.title === 'Help Has Arrived') {
+      let page = parseInt(embed.fields[0].value.split('/')[0]);
+      if (reaction.emoji.name === '⬅️') {
+        page = page - 1;
+      } else if (reaction.emoji.name === '➡️') {
+        page = page + 1;
+      }
+
+      const helpEmbed = await getHelpEmbed([page], reaction.message.guild.id);
+      reaction.message.edit(helpEmbed);
     }
   }
 };
@@ -243,5 +293,5 @@ module.exports = {
   getSpotifyPlaylistMeta,
   convertISOToSeconds,
   isYoutubeUrl,
-  getSongString,
+  getHelpEmbed,
 };

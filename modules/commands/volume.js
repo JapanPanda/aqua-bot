@@ -12,6 +12,8 @@ const {
 module.exports = {
   name: 'volume',
   description: 'Changes volume',
+  usage:
+    '.volume - Displays the current volume.\n.volume 20 - Sets the volume to 20%.',
   async execute(message, args) {
     const guild_id = message.guild.id;
     let guildSettings = await getGuildSettings(guild_id);

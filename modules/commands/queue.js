@@ -8,11 +8,13 @@ const { getQueueEmbed } = require('../utils');
 module.exports = {
   name: 'queue',
   description: 'Shows the queue of songs currently.',
+  usage:
+    '.queue - Displays the queue. React to the arrow to turn the pages.\n.queue 2 - Goes to the second page of the queue.',
   async execute(message, args) {
     const guild_id = message.guild.id;
 
     const queueEmbed = await getQueueEmbed(args, guild_id);
-    message.channel.send(queueEmbed).then(async (sentMessage) => {
+    message.inlineReply(queueEmbed).then(async (sentMessage) => {
       if (
         globals.guilds[guild_id] === undefined ||
         globals.guilds[guild_id].queue.length === 0

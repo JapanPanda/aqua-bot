@@ -37,6 +37,13 @@ client.on('message', (message) => {
   const args = message.content.slice(prefix.length).trim().split(/ +/);
   const command = args.shift().toLowerCase();
 
+  if (command === 'activity' && message.author.id === process.env.DEV_ID) {
+    let type = args[0];
+    let text = args.slice(1).join(' ');
+    client.user.setActivity(text, { type: type });
+    return;
+  }
+
   if (!client.commands.has(command)) return;
 
   try {

@@ -3,6 +3,8 @@ const { createAnnounce, getGuildGlobals, getSongString } = require('../utils');
 module.exports = {
   name: 'move',
   description: 'Moves a song in the queue to a new position.',
+  usage:
+    '.move 5 2 - Moves the song at position 5 in the queue to position 2, shifting the queue.',
   async execute(message, args) {
     if (args.length !== 2) {
       const embed = createAnnounce(

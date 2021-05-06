@@ -4,7 +4,7 @@ const { getGuildGlobals } = require('../utils');
 
 module.exports = {
   name: 'resume',
-  description: 'Resumes the current songs in the queue.',
+  description: 'Resumes the current song in the queue.',
   async execute(message, args) {
     const guild_id = message.guild.id;
 

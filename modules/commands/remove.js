@@ -4,6 +4,7 @@ const { getGuildGlobals, createAnnounce, getSongString } = require('../utils');
 module.exports = {
   name: 'remove',
   description: 'Removes a song from queue.',
+  usage: '.remove 3 - Removes the song at position 3 in the queue.',
   async execute(message, args) {
     if (args.length !== 1) {
       const embed = createAnnounce(
