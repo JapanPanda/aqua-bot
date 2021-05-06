@@ -45,6 +45,12 @@ client.on('message', (message) => {
   } else if (command == 'avatar' && message.author.id === process.env.DEV_ID) {
     client.user.setAvatar(args[0]);
     return;
+  } else if (
+    command === 'username' &&
+    message.author.id === process.env.DEV_ID
+  ) {
+    client.user.setUsername(args.join(' '));
+    return;
   }
 
   if (!client.commands.has(command)) return;
