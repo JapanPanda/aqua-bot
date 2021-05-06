@@ -410,7 +410,7 @@ const queuePredefined = async (message, args, guildGlobal, isNow) => {
       message: message,
       audio: args[0],
       meta: meta,
-      isPredefined: isPredefined,
+      isPredefined: true,
     });
   } else {
     // add to guild's queue
@@ -418,7 +418,7 @@ const queuePredefined = async (message, args, guildGlobal, isNow) => {
       message: message,
       audio: args[0],
       meta: meta,
-      isPredefined: isPredefined,
+      isPredefined: true,
     });
   }
   // if there is nothing in the queue besides itself, go ahead and play it

@@ -9,6 +9,7 @@ Currently, it can function as a music bot for Youtube/Spotify songs.
 - Shuffle [on/off] - Shuffles the queue.
 - Nightcore [on/off] - Turn on/off nightcore.
 - Bassboost [5 (db units)] - Increase the bassboost.
+- Restart - Restarts the current song.
 - Play [song or search query] - Plays a youtube link in the voice channel.
 - Stop - Stops playing any mp3 and leaves the voice channel.
 - Pause - Pauses the song.
