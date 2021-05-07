@@ -127,7 +127,7 @@ class AudioPlayer {
     if (!this.voiceConnection) {
       await this.join(voiceChannel);
     } else if (this.voiceConnection.channelID !== voiceChannel.id) {
-      this.ac.inlineReply({ content: "I'm already in another voice channel!" });
+      // this.ac.inlineReply({ content: "I'm already in another voice channel!" });
       return;
     }
 
