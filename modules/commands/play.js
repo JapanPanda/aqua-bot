@@ -1,22 +1,17 @@
-const { queueAudio } = require('../audio');
-const { createAnnounce } = require('../utils');
-
 module.exports = {
   name: 'play',
   description:
-    'Queues a Spotify or Youtube video/playlist in the current voice channel.',
+    'Plays Youtube/Spotify tracks and playlists. Supports searching.',
   usage:
-    '.play https://www.youtube.com/watch?v=fE2h3lGlOsk - Plays the Youtube link in the channel (also works on Youtube playlists and Spotify playlists/tracks.\n.play wannabe itzy - Searches Youtube for "wannabe itzy" and queues the song.',
+    'play https://www.youtube.com/watch?v=fE2h3lGlOsk - Plays the Youtube link in the channel (also works on Youtube playlists and Spotify playlists/tracks.\nplay wannabe itzy - Searches Youtube for "wannabe itzy" and queues the song.',
+  ac: null, // active AquaClient
   async execute(message, args) {
-    if (args.length === 0) {
-      const embed = createAnnounce(
-        'Incorrect Usage',
-        'Incorrect usage, $play [youtube link or search query]',
-        '#ffbaba'
-      );
-      message.inlineReply(embed);
+    const guild = this.ac.getGuildObject(message.guild.id);
+    const voiceID = message.member.voice.id;
+    if (!voiceID) {
       return;
     }
-    queueAudio(message, args, false);
+
+    guild.audioPlayer.queueAudio(args, message);
   },
 };

@@ -1,9 +1,14 @@
-const { queueAudio } = require('../audio');
-
 module.exports = {
   name: 'sheesh',
-  description: 'Plays sheesh in the current voice channel.',
+  description: 'Plays sheesh in the voice channel.',
+  ac: null, // active AquaClient
   async execute(message, args) {
-    queueAudio(message, ['sheesh.mp3'], true);
+    const guild = this.ac.getGuildObject(message.guild.id);
+    const voiceID = message.member.voice.id;
+    if (!voiceID) {
+      return;
+    }
+
+    guild.audioPlayer.queueAudio(['sheesh.mp3'], message, true);
   },
 };
