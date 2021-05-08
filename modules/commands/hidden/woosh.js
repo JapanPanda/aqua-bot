@@ -1,6 +1,6 @@
 module.exports = {
-  name: 'sheesh',
-  description: 'Plays sheesh in the voice channel.',
+  name: 'woosh',
+  description: 'Plays woosh in the voice channel.',
   ac: null, // active AquaClient
   async execute(message, args) {
     const guild = this.ac.getGuildObject(message.guild.id);
@@ -9,6 +9,6 @@ module.exports = {
       return;
     }
 
-    guild.audioPlayer.queueAudio(['sheesh.mp3'], message, true);
+    guild.audioPlayer.queueAudio(['woosh.mp3'], message, false, true);
   },
 };
