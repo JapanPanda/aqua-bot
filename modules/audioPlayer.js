@@ -2,6 +2,7 @@ const logger = require('./logger');
 const { MessageEmbed } = require('discord.js-light');
 const {
   trimDurationString,
+  convertSecondsToISO,
   createAnnounceEmbed,
   getPlaylistQueryEmbed,
   getPlaybackSettingsString,
@@ -24,6 +25,7 @@ class AudioPlayer {
   timeout;
   shouldRestart;
   lastMessage;
+  lastNonPredefinedSong;
 
   constructor(ac, guildID) {
     this.queue = [];
@@ -100,21 +102,62 @@ class AudioPlayer {
       );
     });
 
-    dispatcher.on('close', () => {
-      if (!this.shouldRestart && this.queue.length === 0) {
-        this.currentSong = null;
-        logger.info(
-          `No more songs left in the queue for ${this.guildID}. Starting timer to disconnect.`
-        );
+    dispatcher.on('close', async () => {
+      const { autoplay } = await this.ac.getGuildSettings(this.guildID);
 
-        this.timeout = setTimeout(() => {
-          logger.info(`Disconnected from ${this.guildID} due to timer.`);
-          this.leave();
-        }, 1000 * 30);
+      if (!this.shouldRestart && this.queue.length === 0) {
+        if (autoplay && this.lastNonPredefinedSong) {
+          this.getSongFromAutoplay();
+        } else {
+          this.currentSong = null;
+          logger.info(
+            `No more songs left in the queue for ${this.guildID}. Starting timer to disconnect.`
+          );
+
+          this.timeout = setTimeout(() => {
+            logger.info(`Disconnected from ${this.guildID} due to timer.`);
+            this.leave();
+          }, 1000 * 30);
+        }
       } else {
         this.playNextAudio();
       }
     });
+  }
+
+  async getSongFromAutoplay() {
+    const url = this.lastNonPredefinedSong.audioPath;
+    const results = (await ytdl.getBasicInfo(url)).related_videos.filter(
+      (ele) => !ele.isLive
+    );
+    if (results.length === 0) {
+      logger.info(`Couldn't find any songs left.'`);
+      const embed = createAnnounceEmbed(
+        'Autoplay Error',
+        "Couldn't find any songs to autoplay!",
+        '#ffbaba'
+      );
+      this.lastMessage.channel.send(embed);
+      this.leave();
+      return;
+    }
+    const nextSong = results[0];
+    const duration = trimDurationString(
+      convertSecondsToISO(nextSong.length_seconds)
+    );
+
+    const title = nextSong.title;
+    const nextSongUrl = `https://www.youtube.com/watch?v=${nextSong.id}`;
+    const meta = {
+      duration,
+      title,
+      url: nextSongUrl,
+      requester: `${this.ac.client.user}`,
+    };
+    const song = { audioPath: nextSongUrl, meta, isPredefined: false };
+
+    this.queue.push(song);
+    this.playNextAudio();
   }
 
   async playNextAudio() {
@@ -124,7 +167,12 @@ class AudioPlayer {
       shuffle,
       nightcore,
       bassboost,
+      treble,
+      rotate,
     } = await this.ac.getGuildSettings(this.guildID);
+    if (this.currentSong && !this.currentSong.isPredefined) {
+      this.lastNonPredefinedSong = this.currentSong;
+    }
 
     if (!this.shouldRestart) {
       if (loop === 'all' && this.currentSong) {
@@ -173,8 +221,32 @@ class AudioPlayer {
         if (encoder !== '') {
           encoder += ',';
         }
-        encoder += `bass=g=${bassboost}:f=110:w=0.6`;
+        encoder += `lowshelf=g=${bassboost}:f=150:w=0.8`;
       }
+
+      if (treble !== 0) {
+        if (encoder !== '') {
+          encoder += ',';
+        }
+        encoder += `highshelf=g=${treble}:f=14000:w=1.2`;
+      }
+
+      if (rotate !== 0) {
+        if (encoder !== '') {
+          encoder += ',';
+        }
+        encoder += `apulsator=hz=${1 / rotate}`;
+      }
+
+      // alternative to bass and treble
+      //      if (bassboost !== 0 || treble !== 0) {
+      //        if (encoder !== '') {
+      //          encoder += ',';
+      //        }
+      //        encoder = `firequalizer=gain_entry='entry(0,${bassboost});entry(250,${
+      //          bassboost / 2
+      //        });entry(1000,0);entry(4000,${treble / 2});entry(16000,${treble})'`;
+      //      }
 
       audioData = ytdl(audioPath, {
         filter: 'audioonly',
@@ -196,7 +268,7 @@ class AudioPlayer {
       if (psString != '') {
         playingEmbed.setFooter(psString);
       }
-      this.lastMessage.inlineReply(playingEmbed);
+      this.lastMessage.channel.send(playingEmbed);
     }
 
     this.createDispatcher(audioData, audioOptions);

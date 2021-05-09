@@ -329,7 +329,15 @@ const getSongString = (song) => {
 };
 
 const getPlaybackSettingsString = (playbackSettings) => {
-  const { nightcore, bassboost, loop, shuffle } = playbackSettings;
+  const {
+    nightcore,
+    bassboost,
+    autoplay,
+    loop,
+    shuffle,
+    treble,
+    rotate,
+  } = playbackSettings;
 
   let string = '';
 
@@ -343,12 +351,24 @@ const getPlaybackSettingsString = (playbackSettings) => {
     string += 'Shuffle, ';
   }
 
+  if (autoplay) {
+    string += `Autoplay, `;
+  }
+
   if (nightcore) {
     string += 'Nightcore, ';
   }
 
   if (bassboost !== 0) {
     string += `Bassboost ${bassboost} dB, `;
+  }
+
+  if (treble !== 0) {
+    string += `Treble ${treble} dB, `;
+  }
+
+  if (rotate !== 0) {
+    string += `3d ${rotate} seconds, `;
   }
 
   return string.substring(0, string.length - 2);
@@ -437,6 +457,7 @@ const getQueueEmbed = async (audioPlayer, page, playbackSettings) => {
 module.exports = {
   createAnnounceEmbed,
   trimDurationString,
+  convertSecondsToISO,
   getPlaylistQueryString,
   getPlaylistQueryEmbed,
   getPlaylistQueryEmbedFromUrl,

@@ -230,9 +230,12 @@ class AquaClient {
     const validationSetting = {
       volume: 0.5,
       bassboost: 0,
+      treble: 0,
       nightcore: false,
       loop: 'off',
       shuffle: false,
+      autoplay: false,
+      rotate: 0,
     };
 
     if (guildSettings === null) {
