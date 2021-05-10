@@ -43,6 +43,7 @@ class AudioPlayer {
     if (this.voiceConnection) {
       this.queue = [];
       this.currentSong = null;
+      this.lastNonPredefinedSong = null;
       this.voiceConnection.dispatcher.destroy();
       this.voiceConnection.disconnect();
       this.voiceConnection = null;
