@@ -3,3 +3,5 @@
 dump.rdb
 node_modules
 ecosystem.config.js
+scripts/louder
+scripts/normalized
