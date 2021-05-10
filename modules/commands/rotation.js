@@ -21,7 +21,7 @@ module.exports = {
       );
       message.inlineReply(embed);
     } else if (args.length === 1) {
-      const newRotate = parseFloat(args[0]);
+      let newRotate = parseFloat(args[0]);
       if (args[0] === 'off') {
         newRotate = 0;
       }

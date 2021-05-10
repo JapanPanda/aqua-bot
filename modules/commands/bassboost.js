@@ -21,7 +21,7 @@ module.exports = {
       );
       message.inlineReply(embed);
     } else if (args.length === 1) {
-      const newBassboost = parseFloat(args[0]);
+      let newBassboost = parseFloat(args[0]);
       if (args[0] === 'off') {
         newBassboost = 0;
       }

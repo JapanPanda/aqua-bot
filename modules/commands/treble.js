@@ -21,7 +21,7 @@ module.exports = {
       );
       message.inlineReply(embed);
     } else if (args.length === 1) {
-      const newTreble = parseFloat(args[0]);
+      let newTreble = parseFloat(args[0]);
       if (args[0] === 'off') {
         newTreble = 0;
       }
