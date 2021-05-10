@@ -43,6 +43,7 @@ class AudioPlayer {
     if (this.voiceConnection) {
       this.queue = [];
       this.currentSong = null;
+      this.voiceConnection.dispatcher.destroy();
       this.voiceConnection.disconnect();
       this.voiceConnection = null;
     }
@@ -90,6 +91,9 @@ class AudioPlayer {
 
     // initialize the events
     dispatcher.on('start', () => {
+      if (this.currentSong && !this.currentSong.isPredefined) {
+        this.lastNonPredefinedSong = this.currentSong;
+      }
       logger.info(
         `Started to play ${this.currentSong.meta.title} for ${this.guildID}`
       );
@@ -106,7 +110,7 @@ class AudioPlayer {
       const { autoplay } = await this.ac.getGuildSettings(this.guildID);
 
       if (!this.shouldRestart && this.queue.length === 0) {
-        if (autoplay && this.lastNonPredefinedSong) {
+        if (autoplay && this.lastNonPredefinedSong && this.voiceConnection) {
           this.getSongFromAutoplay();
         } else {
           this.currentSong = null;
@@ -170,9 +174,6 @@ class AudioPlayer {
       treble,
       rotate,
     } = await this.ac.getGuildSettings(this.guildID);
-    if (this.currentSong && !this.currentSong.isPredefined) {
-      this.lastNonPredefinedSong = this.currentSong;
-    }
 
     if (!this.shouldRestart) {
       if (loop === 'all' && this.currentSong) {
