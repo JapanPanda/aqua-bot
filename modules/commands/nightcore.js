@@ -10,7 +10,7 @@ module.exports = {
   ac: null,
   async execute(message, args) {
     const guildID = message.guild.id;
-    const guildSettings = this.ac.getGuildSettings(guildID);
+    const guildSettings = await this.ac.getGuildSettings(guildID);
     const nightcore = guildSettings.nightcore;
 
     if (args.length === 0) {
