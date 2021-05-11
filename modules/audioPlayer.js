@@ -40,6 +40,7 @@ class AudioPlayer {
 
   async join(voiceChannel) {
     this.voiceConnection = await voiceChannel.join();
+    this.voiceConnection.voice.setSelfDeaf(true);
   }
 
   async leave() {
