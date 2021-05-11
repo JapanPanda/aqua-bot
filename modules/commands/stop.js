@@ -14,7 +14,7 @@ module.exports = {
       message.member.voice.channel.id === message.guild.me.voice.channel.id
     ) {
       logger.info(`Stopped playing for ${guild_id}.`);
-      guild.audioPlayer.leave();
+      await guild.audioPlayer.leave();
       return;
     }
 

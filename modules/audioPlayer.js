@@ -27,6 +27,7 @@ class AudioPlayer {
   lastMessage;
   lastNonPredefinedSong;
   autoplayHistory; // need this to prevent youtube recommendation loops
+  shouldStop; // to avoid data race conditions when stopping, makes stop instant
 
   constructor(ac, guildID) {
     this.queue = [];
@@ -41,17 +42,19 @@ class AudioPlayer {
     this.voiceConnection = await voiceChannel.join();
   }
 
-  leave() {
+  async leave() {
+    this.shouldStop = true;
     if (this.voiceConnection) {
       this.queue = [];
       this.autoplayHistory = [];
       this.currentSong = null;
       this.lastNonPredefinedSong = null;
       if (this.voiceConnection.dispatcher) {
-        this.voiceConnection.dispatcher.destroy();
+        await this.voiceConnection.dispatcher.destroy();
       }
-      this.voiceConnection.disconnect();
+      await this.voiceConnection.disconnect();
       this.voiceConnection = null;
+      this.shouldStop = false;
     }
   }
 
@@ -93,6 +96,12 @@ class AudioPlayer {
   }
 
   createDispatcher(audioData, audioOptions) {
+    if (!this.voiceConnection) {
+      this.lastMessage.channel.send(
+        `Sorry, something went wrong! Please submit a bug report to help me fix it.`
+      );
+      return;
+    }
     const dispatcher = this.voiceConnection.play(audioData, audioOptions);
 
     // initialize the events
@@ -124,10 +133,12 @@ class AudioPlayer {
             `No more songs left in the queue for ${this.guildID}. Starting timer to disconnect.`
           );
 
-          this.timeout = setTimeout(() => {
-            logger.info(`Disconnected from ${this.guildID} due to timer.`);
-            this.leave();
-          }, 1000 * 30);
+          if (this.voiceConnection) {
+            this.timeout = setTimeout(() => {
+              logger.info(`Disconnected from ${this.guildID} due to timer.`);
+              this.leave();
+            }, 1000 * 30);
+          }
         }
       } else {
         this.playNextAudio();
@@ -201,6 +212,10 @@ class AudioPlayer {
       rotate,
     } = await this.ac.getGuildSettings(this.guildID);
 
+    if (this.shouldStop) {
+      this.leave();
+      return;
+    }
     if (!this.shouldRestart) {
       if (loop === 'all' && this.currentSong) {
         this.queue.push(this.currentSong);
@@ -330,6 +345,11 @@ class AudioPlayer {
       meta,
     };
 
+    if (this.shouldStop) {
+      this.leave();
+      return;
+    }
+
     if (isNow) {
       this.queue.unshift(song);
     } else {
@@ -369,6 +389,11 @@ class AudioPlayer {
         isPredefined: false,
         meta,
       };
+
+      if (this.shouldStop) {
+        this.leave();
+        return;
+      }
 
       if (isNow) {
         this.queue.unshift(song);
@@ -419,6 +444,12 @@ class AudioPlayer {
         meta,
         isPredefined: false,
       };
+
+      if (this.shouldStop) {
+        this.leave();
+        return;
+      }
+
       if (isNow) {
         this.queue.splice(i, 0, newSong);
       } else {
@@ -477,6 +508,11 @@ class AudioPlayer {
         isPredefined: false,
         meta,
       };
+
+      if (this.shouldStop) {
+        this.leave();
+        return;
+      }
 
       if (isNow) {
         this.queue.splice(i, 0, song);
@@ -542,6 +578,11 @@ class AudioPlayer {
         meta,
       };
 
+      if (this.shouldStop) {
+        this.leave();
+        return;
+      }
+
       if (isNow) {
         this.queue.shift(song);
       } else {
@@ -582,6 +623,12 @@ class AudioPlayer {
         requester: message.author.toString(),
       },
     };
+
+    if (this.shouldStop) {
+      this.leave();
+      return;
+    }
+
     if (isNow) {
       this.queue.shift(newSong);
     } else {
@@ -602,6 +649,11 @@ class AudioPlayer {
     }
 
     this.lastMessage = message;
+
+    if (this.shouldStop) {
+      this.leave();
+      return;
+    }
 
     if (isPredefined) {
       this.queuePredefinedAudio(args, message, isNow);
