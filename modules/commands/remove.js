@@ -42,11 +42,16 @@ module.exports = {
 
     let song = guild.audioPlayer.queue.splice(index - 1, 1)[0];
 
-    const removeEmbed = createAnnounceEmbed(
-      'Removed Successfully',
-      `Successfully removed the song ${getSongString(song)}.`,
-      '#E0FFFF'
-    );
-    message.inlineReply(removeEmbed);
+    const { verbose } = await this.ac.getGuildSettings(guildID);
+    if (verbose) {
+      const removeEmbed = createAnnounceEmbed(
+        'Removed Successfully',
+        `Successfully removed the song ${getSongString(song)}.`,
+        '#E0FFFF'
+      );
+      message.inlineReply(removeEmbed);
+    } else {
+      message.react('✅');
+    }
   },
 };

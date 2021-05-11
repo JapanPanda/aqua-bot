@@ -18,11 +18,17 @@ module.exports = {
 
     guild.audioPlayer.resume();
     const playingSong = guild.audioPlayer.currentSong;
-    const resumeEmbed = createAnnounceEmbed(
-      'Resumed Playing',
-      getSongString(playingSong),
-      '#E0FFFF'
-    );
-    message.inlineReply(resumeEmbed);
+
+    const { verbose } = await this.ac.getGuildSettings(guildID);
+    if (verbose) {
+      const resumeEmbed = createAnnounceEmbed(
+        'Resumed Playing',
+        getSongString(playingSong),
+        '#E0FFFF'
+      );
+      message.inlineReply(resumeEmbed);
+    } else {
+      message.react('✅');
+    }
   },
 };

@@ -63,11 +63,17 @@ module.exports = {
 
         logger.info(`Modified treble for ${guildID} to be ${newTreble}`);
       });
-      const embed = createAnnounceEmbed(
-        'Treble Set Successfully!',
-        `Set the treble setting to: ${newTreble} dB.`
-      );
-      message.inlineReply(embed);
+
+      const verbose = guildSettings.verbose;
+      if (verbose) {
+        const embed = createAnnounceEmbed(
+          'Treble Set Successfully!',
+          `Set the treble setting to: ${newTreble} dB.`
+        );
+        message.inlineReply(embed);
+      } else {
+        message.react('✅');
+      }
     } else {
       const embed = createAnnounceEmbed(
         'Incorrect Usage!',

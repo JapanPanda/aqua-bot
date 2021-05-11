@@ -63,11 +63,16 @@ module.exports = {
 
         logger.info(`Modified bassboost for ${guildID} to be ${newBassboost}`);
       });
-      const embed = createAnnounceEmbed(
-        'Bassboost Set Successfully!',
-        `Set the bassboost setting to: ${newBassboost} dB.`
-      );
-      message.inlineReply(embed);
+      const verbose = guildSettings.verbose;
+      if (verbose) {
+        const embed = createAnnounceEmbed(
+          'Bassboost Set Successfully!',
+          `Set the bassboost setting to: ${newBassboost} dB.`
+        );
+        message.inlineReply(embed);
+      } else {
+        message.react('✅');
+      }
     } else {
       const embed = createAnnounceEmbed(
         'Incorrect Usage!',

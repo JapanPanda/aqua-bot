@@ -58,12 +58,17 @@ module.exports = {
     // splice original element into new index
     guild.audioPlayer.queue.splice(newIndex - 1, 0, song);
 
-    const embed = createAnnounceEmbed(
-      'Successfully Moved Song',
-      `Successfully moved ${songString} to position ${newIndex}.`,
-      '#E0FFFF'
-    );
+    const { verbose } = await this.ac.getGuildSettings(guildID);
+    if (verbose) {
+      const embed = createAnnounceEmbed(
+        'Successfully Moved Song',
+        `Successfully moved ${songString} to position ${newIndex}.`,
+        '#E0FFFF'
+      );
 
-    message.inlineReply(embed);
+      message.inlineReply(embed);
+    } else {
+      message.react('✅');
+    }
   },
 };

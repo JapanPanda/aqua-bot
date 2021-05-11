@@ -63,11 +63,17 @@ module.exports = {
 
         logger.info(`Modified rotate for ${guildID} to be ${newRotate}`);
       });
-      const embed = createAnnounceEmbed(
-        '3d Set Successfully!',
-        `Set the 3d setting to: ${newRotate} seconds.`
-      );
-      message.inlineReply(embed);
+
+      const verbose = guildSettings.verbose;
+      if (verbose) {
+        const embed = createAnnounceEmbed(
+          '3d Set Successfully!',
+          `Set the 3d setting to: ${newRotate} seconds.`
+        );
+        message.inlineReply(embed);
+      } else {
+        message.react('✅');
+      }
     } else {
       const embed = createAnnounceEmbed(
         'Incorrect Usage!',

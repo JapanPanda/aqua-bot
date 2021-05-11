@@ -18,11 +18,16 @@ module.exports = {
 
     guild.audioPlayer.pause();
     const playingSong = guild.audioPlayer.currentSong;
-    const pauseEmbed = createAnnounceEmbed(
-      'Paused Playing',
-      getSongString(playingSong),
-      '#E0FFFF'
-    );
-    message.inlineReply(pauseEmbed);
+    const { verbose } = await this.ac.getGuildSettings(guildID);
+    if (verbose) {
+      const pauseEmbed = createAnnounceEmbed(
+        'Paused Playing',
+        getSongString(playingSong),
+        '#E0FFFF'
+      );
+      message.inlineReply(pauseEmbed);
+    } else {
+      message.react('✅');
+    }
   },
 };

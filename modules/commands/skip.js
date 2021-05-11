@@ -34,11 +34,17 @@ module.exports = {
     guild.audioPlayer.skip(skipIndex);
 
     logger.info(`Skipped ${skipIndex} songs for ${guildID}.`);
-    const skippedEmbed = createAnnounceEmbed(
-      'Skipped Songs',
-      `Skipped ${skipIndex} songs.`,
-      '#E0FFFF'
-    );
-    message.inlineReply(skippedEmbed);
+
+    const { verbose } = await this.ac.getGuildSettings(guildID);
+    if (verbose) {
+      const skippedEmbed = createAnnounceEmbed(
+        'Skipped Songs',
+        `Skipped ${skipIndex} songs.`,
+        '#E0FFFF'
+      );
+      message.inlineReply(skippedEmbed);
+    } else {
+      message.react('✅');
+    }
   },
 };

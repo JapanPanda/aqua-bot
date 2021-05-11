@@ -45,12 +45,18 @@ module.exports = {
 
         logger.info(`Modified volume for ${guildID} to be ${args[0] / 100}`);
       });
-      const embed = createAnnounceEmbed(
-        'Volume Set Successfully!',
-        `Set the volume setting to: ${args[0]}%.`,
-        '#E0FFFF'
-      );
-      message.inlineReply(embed);
+
+      const verbose = guildSettings.verbose;
+      if (verbose) {
+        const embed = createAnnounceEmbed(
+          'Volume Set Successfully!',
+          `Set the volume setting to: ${args[0]}%.`,
+          '#E0FFFF'
+        );
+        message.inlineReply(embed);
+      } else {
+        message.react('✅');
+      }
     } else {
       const embed = createAnnounce(
         'Incorrect Usage!',

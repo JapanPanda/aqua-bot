@@ -236,6 +236,7 @@ class AquaClient {
       shuffle: false,
       autoplay: false,
       rotate: 0,
+      verbose: false,
     };
 
     if (guildSettings === null) {

@@ -42,12 +42,18 @@ module.exports = {
 
         logger.info(`Modified shuffle for ${guildID} to be ${newShuffle}`);
       });
-      const embed = createAnnounceEmbed(
-        'Shuffle Set Successfully!',
-        `Set the shuffle setting to: ${newShuffle}.`,
-        '#E0FFFF'
-      );
-      message.inlineReply(embed);
+
+      const verbose = guildSettings.verbose;
+      if (verbose) {
+        const embed = createAnnounceEmbed(
+          'Shuffle Set Successfully!',
+          `Set the shuffle setting to: ${newShuffle}.`,
+          '#E0FFFF'
+        );
+        message.inlineReply(embed);
+      } else {
+        message.react('✅');
+      }
     } else {
       const embed = createAnnounceEmbed(
         'Incorrect Usage!',

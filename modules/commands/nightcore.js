@@ -42,11 +42,16 @@ module.exports = {
 
         logger.info(`Modified nightcore for ${guildID} to be ${nightcore}`);
       });
-      const embed = createAnnounceEmbed(
-        'Nightcore Set Successfully!',
-        `Set the nightcore setting to: ${newNightcore}.`
-      );
-      message.inlineReply(embed);
+      const verbose = guildSettings.verbose;
+      if (verbose) {
+        const embed = createAnnounceEmbed(
+          'Nightcore Set Successfully!',
+          `Set the nightcore setting to: ${newNightcore}.`
+        );
+        message.inlineReply(embed);
+      } else {
+        message.react('✅');
+      }
     } else {
       const embed = createAnnounceEmbed(
         'Incorrect Usage!',

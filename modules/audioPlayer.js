@@ -26,9 +26,11 @@ class AudioPlayer {
   shouldRestart;
   lastMessage;
   lastNonPredefinedSong;
+  autoplayHistory; // need this to prevent youtube recommendation loops
 
   constructor(ac, guildID) {
     this.queue = [];
+    this.autoplayHistory = [];
     this.ac = ac;
     this.guildID = guildID;
     this.currentSong = null;
@@ -42,9 +44,12 @@ class AudioPlayer {
   leave() {
     if (this.voiceConnection) {
       this.queue = [];
+      this.autoplayHistory = [];
       this.currentSong = null;
       this.lastNonPredefinedSong = null;
-      this.voiceConnection.dispatcher.destroy();
+      if (this.voiceConnection.dispatcher) {
+        this.voiceConnection.dispatcher.destroy();
+      }
       this.voiceConnection.disconnect();
       this.voiceConnection = null;
     }
@@ -146,7 +151,27 @@ class AudioPlayer {
       this.leave();
       return;
     }
-    const nextSong = results[0];
+
+    let nextSong = null;
+    for (const song of results) {
+      if (!this.autoplayHistory.includes(song.title)) {
+        nextSong = song;
+        break;
+      }
+    }
+
+    if (!nextSong) {
+      logger.info(`Could not find a song to autoplay!`);
+      const embed = createAnnounceEmbed(
+        'Autoplay Error',
+        "Couldn't find any songs to autoplay!",
+        '#ffbaba'
+      );
+      this.lastMessage.channel.send(embed);
+      this.leave();
+      return;
+    }
+
     const duration = trimDurationString(
       convertSecondsToISO(nextSong.length_seconds)
     );
@@ -160,7 +185,7 @@ class AudioPlayer {
       requester: `${this.ac.client.user}`,
     };
     const song = { audioPath: nextSongUrl, meta, isPredefined: false };
-
+    this.autoplayHistory.push(nextSong.title);
     this.queue.push(song);
     this.playNextAudio();
   }
@@ -270,7 +295,10 @@ class AudioPlayer {
       if (psString != '') {
         playingEmbed.setFooter(psString);
       }
-      this.lastMessage.channel.send(playingEmbed);
+
+      if (playbackSettings.verbose) {
+        this.lastMessage.channel.send(playingEmbed);
+      }
     }
 
     this.createDispatcher(audioData, audioOptions);

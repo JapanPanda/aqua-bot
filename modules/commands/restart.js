@@ -22,11 +22,16 @@ module.exports = {
 
     await guild.audioPlayer.restart();
 
-    const restartEmbed = createAnnounceEmbed(
-      '',
-      'Restarted the current song.',
-      '#3AA8C1'
-    );
-    message.inlineReply(restartEmbed);
+    const { verbose } = await this.ac.getGuildSettings(guildID);
+    if (verbose) {
+      const restartEmbed = createAnnounceEmbed(
+        '',
+        'Restarted the current song.',
+        '#3AA8C1'
+      );
+      message.inlineReply(restartEmbed);
+    } else {
+      message.react('✅');
+    }
   },
 };

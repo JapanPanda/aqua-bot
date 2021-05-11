@@ -43,12 +43,17 @@ module.exports = {
 
         logger.info(`Modified loop for ${guildID} to be ${newLoop}`);
       });
-      const embed = createAnnounceEmbed(
-        'Loop Set Successfully!',
-        `Set the loop setting to: ${newLoop}.`,
-        '#E0FFFF'
-      );
-      message.inlineReply(embed);
+      const verbose = guildSettings.verbose;
+      if (verbose) {
+        const embed = createAnnounceEmbed(
+          'Loop Set Successfully!',
+          `Set the loop setting to: ${newLoop}.`,
+          '#E0FFFF'
+        );
+        message.inlineReply(embed);
+      } else {
+        message.react('✅');
+      }
     } else {
       const embed = createAnnounceEmbed(
         'Incorrect Usage!',
