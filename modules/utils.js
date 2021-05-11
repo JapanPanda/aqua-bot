@@ -432,7 +432,7 @@ const getQueueEmbed = async (audioPlayer, page, playbackSettings) => {
           .map((ele) => convertISOToSeconds(ele.meta.duration))
           .reduce((acc, ele) => acc + ele);
 
-  let totalTime = convertISOToSeconds(durationSeconds);
+  let totalTime = convertSecondsToISO(durationSeconds);
   totalTime = trimDurationString(totalTime);
 
   const queueEmbed = new MessageEmbed()
