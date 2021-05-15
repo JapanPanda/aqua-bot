@@ -10,7 +10,8 @@ const {
   getSpotifyPlaylistQueryEmbed,
   parseSpotifyLink,
 } = require('./utils');
-const ytdl = require('discord-ytdl-core');
+const prism = require('prism-media');
+const ytdl = require('ytdl-core');
 const ytsr = require('ytsr');
 const ytpl = require('ytpl');
 const { getData } = require('spotify-url-info');
@@ -28,6 +29,7 @@ class AudioPlayer {
   lastNonPredefinedSong;
   autoplayHistory; // need this to prevent youtube recommendation loops
   shouldStop; // to avoid data race conditions when stopping, makes stop instant
+  transcoder; // keep transcoder in case we need to destroy it on leave
 
   constructor(ac, guildID) {
     this.queue = [];
@@ -48,11 +50,16 @@ class AudioPlayer {
     if (this.voiceConnection) {
       this.queue = [];
       this.autoplayHistory = [];
-      this.currentSong = null;
-      this.lastNonPredefinedSong = null;
+      // destroy transcoder if needed
+      if (this.transcoder) {
+        this.transcoder.destroy();
+      }
+
       if (this.voiceConnection.dispatcher) {
         await this.voiceConnection.dispatcher.destroy();
       }
+      this.currentSong = null;
+      this.lastNonPredefinedSong = null;
       await this.voiceConnection.disconnect();
       this.voiceConnection = null;
       this.shouldStop = false;
@@ -129,6 +136,10 @@ class AudioPlayer {
         if (autoplay && this.lastNonPredefinedSong && this.voiceConnection) {
           this.getSongFromAutoplay();
         } else {
+          if (this.currentSong && !this.currentSong.isPredefined) {
+            logger.info(`Destroyed transcoder`);
+            this.currentSong.audioPath.destroy();
+          }
           this.currentSong = null;
           logger.info(
             `No more songs left in the queue for ${this.guildID}. Starting timer to disconnect.`
@@ -236,7 +247,7 @@ class AudioPlayer {
     }
 
     let audioData = null;
-    let audioOptions = { volume, highWaterMark: 1 };
+    let audioOptions = { volume, highWaterMark: 1, type: 'opus' };
     if (this.currentSong.isPredefined) {
       audioData = `./assets/${this.currentSong.audioPath}`;
     } else {
@@ -291,13 +302,47 @@ class AudioPlayer {
       //        });entry(1000,0);entry(4000,${treble / 2});entry(16000,${treble})'`;
       //      }
 
+      const args = [
+        '-analyzeduration',
+        '0',
+        '-loglevel',
+        '0',
+        '-f',
+        's16le',
+        '-ar',
+        '48000',
+        '-ac',
+        '2',
+      ];
+
+      if (encoder !== '') {
+        args.push('-af');
+        args.push(encoder);
+      }
+
+      const transcoder = new prism.FFmpeg({
+        args,
+      });
+
+      const opusEncoder = new prism.opus.Encoder({
+        rate: 48000,
+        channels: 2,
+        frameSize: 960,
+      });
+
       audioData = ytdl(audioPath, {
         filter: 'audioonly',
         quality: 'highestaudio',
-        fmt: 'mp3',
         highWaterMark: 6.4e7,
         dlChunkSize: 0,
-        encoderArgs: encoder === '' ? null : ['-af', encoder],
+      })
+        .pipe(transcoder)
+        .pipe(opusEncoder);
+
+      this.transcoder = audioData;
+      audioData.on('close', () => {
+        transcoder.destroy();
+        opusEncoder.destroy();
       });
 
       const playingEmbed = createAnnounceEmbed(
@@ -322,7 +367,8 @@ class AudioPlayer {
 
   async searchAndQueueYoutubeVideo(args, message, isNow) {
     const query = args.join(' ');
-    const srResults = await ytsr(query, { limit: 1 });
+    const srQuery = (await ytsr.getFilters(query)).get('Type').get('Video').url;
+    const srResults = await ytsr(srQuery, { limit: 1 });
 
     if (srResults.items.length === 0) {
       message.inlineReply("Could'nt find a video for that search query!");
