@@ -3,50 +3,50 @@ const redisClient = require('../redis');
 const { createAnnounceEmbed } = require('../utils');
 
 module.exports = {
-  name: 'nightcore',
-  description: 'Changes nightcore setting.',
+  name: 'vaporwave',
+  description: 'Changes vaporwave setting.',
   usage:
-    '.nightcore - Displays the current nightcore setting.\n.nightcore [off/on]',
+    '.vaporwave - Displays the current vaporwave setting.\n.vaporwave [off/on]',
   ac: null,
   async execute(message, args) {
     const guildID = message.guild.id;
     const guildSettings = await this.ac.getGuildSettings(guildID);
-    const nightcore = guildSettings.nightcore;
+    const vaporwave = guildSettings.vaporwave;
 
     if (args.length === 0) {
       const embed = createAnnounceEmbed(
-        'Nightcore Setting',
-        `The current nightcore setting is: ${nightcore ? 'on' : 'off'}.`
+        'Vaporwave Setting',
+        `The current vaporwave setting is: ${vaporwave ? 'on' : 'off'}.`
       );
       message.inlineReply(embed);
     } else if (args.length === 1) {
-      const newNightcore = args[0];
+      const newVaporwave = args[0];
 
-      if (newNightcore !== 'on' && newNightcore !== 'off') {
+      if (newVaporwave !== 'on' && newVaporwave !== 'off') {
         const embed = createAnnounceEmbed(
           'Incorrect Usage!',
-          `Incorrect usage of $nightcore.\nExample: $nightcore on/off\nWithout specifying the new nightcore setting to set it at, it'll state the current nightcore setting.`,
+          `Incorrect usage of vaporwave.\nExample: vaporwave on/off\nWithout specifying the new vaporwave setting to set it at, it'll state the current vaporwave setting.`,
           '#ffbaba'
         );
         message.inlineReply(embed);
         return;
       }
 
-      guildSettings.nightcore = newNightcore === 'on';
-      guildSettings.vaporwave = false;
+      guildSettings.vaporwave = newVaporwave === 'on';
+      guildSettings.nightcore = false;
       redisClient.set(guildID, JSON.stringify(guildSettings), (err) => {
         if (err) {
-          logger.error(`Error setting nightcore.\n${err}`);
+          logger.error(`Error setting vaporwave.\n${err}`);
           return;
         }
 
-        logger.info(`Modified nightcore for ${guildID} to be ${newNightcore}`);
+        logger.info(`Modified vaporwave for ${guildID} to be ${newVaporwave}`);
       });
       const verbose = guildSettings.verbose;
       if (verbose) {
         const embed = createAnnounceEmbed(
-          'Nightcore Set Successfully!',
-          `Set the nightcore setting to: ${newNightcore}.`
+          'Vaporwave Set Successfully!',
+          `Set the vaporwave setting to: ${newVaporwave}.`
         );
         message.inlineReply(embed);
       } else {
@@ -55,7 +55,7 @@ module.exports = {
     } else {
       const embed = createAnnounceEmbed(
         'Incorrect Usage!',
-        `Incorrect usage of $nightcore.\nExample: $nightcore on/off\nWithout specifying the new nightcore setting to set it at, it'll state the current nightcore setting.`,
+        `Incorrect usage of vaporwave.\nExample: vaporwave on/off\nWithout specifying the new vaporwave setting to set it at, it'll state the current vaporwave setting.`,
         '#ffbaba'
       );
       message.inlineReply(embed);

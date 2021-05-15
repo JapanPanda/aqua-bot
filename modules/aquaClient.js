@@ -232,6 +232,7 @@ class AquaClient {
       bassboost: 0,
       treble: 0,
       nightcore: false,
+      vaporwave: false,
       loop: 'off',
       shuffle: false,
       autoplay: false,

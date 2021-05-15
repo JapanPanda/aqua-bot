@@ -359,6 +359,10 @@ const getPlaybackSettingsString = (playbackSettings) => {
     string += 'Nightcore, ';
   }
 
+  if (vaporwave) {
+    string += 'Vaporwave, ';
+  }
+
   if (bassboost !== 0) {
     string += `Bassboost ${bassboost} dB, `;
   }
