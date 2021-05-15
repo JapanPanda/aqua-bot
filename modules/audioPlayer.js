@@ -219,6 +219,7 @@ class AudioPlayer {
       loop,
       shuffle,
       nightcore,
+      vaporwave,
       bassboost,
       treble,
       rotate,
@@ -269,6 +270,13 @@ class AudioPlayer {
           encoder += ',';
         }
         encoder += 'atempo=0.95,asetrate=44100*1.40';
+      }
+
+      if (vaporwave) {
+        if (encoder !== '') {
+          encoder += ',';
+        }
+        encoder += 'atempo=1.1,asetrate=48000*0.8';
       }
 
       if (bassboost !== 0) {

@@ -333,6 +333,7 @@ const getPlaybackSettingsString = (playbackSettings) => {
     nightcore,
     bassboost,
     autoplay,
+    vaporwave,
     loop,
     shuffle,
     treble,
@@ -357,6 +358,10 @@ const getPlaybackSettingsString = (playbackSettings) => {
 
   if (nightcore) {
     string += 'Nightcore, ';
+  }
+
+  if (vaporwave) {
+    string += 'Vaporwave, ';
   }
 
   if (bassboost !== 0) {
