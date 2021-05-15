@@ -11,6 +11,7 @@ module.exports = {
 
     if (
       message.guild.me.voice.channel &&
+      message.member.voice.channel &&
       message.member.voice.channel.id === message.guild.me.voice.channel.id
     ) {
       logger.info(`Stopped playing for ${guild_id}.`);

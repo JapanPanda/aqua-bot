@@ -276,7 +276,7 @@ class AudioPlayer {
         if (encoder !== '') {
           encoder += ',';
         }
-        encoder += 'atempo=1.1,asetrate=48000*0.8';
+        encoder += 'atempo=0.75,adelay=0.2';
       }
 
       if (bassboost !== 0) {
