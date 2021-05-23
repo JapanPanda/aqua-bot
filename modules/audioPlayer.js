@@ -255,7 +255,10 @@ class AudioPlayer {
       let audioPath = this.currentSong.audioPath;
       // convert spotify to youtube link
       if (this.currentSong.audioPath.includes('spotify')) {
-        const srResult = await ytsr(this.currentSong.meta.title, { limit: 1 });
+        const srQuery = (await ytsr.getFilters(this.currentSong.meta.title))
+          .get('Type')
+          .get('Video').url;
+        const srResults = await ytsr(srQuery, { limit: 1 });
         if (srResult.items.length === 0) {
           // song not available, must skip
           playNextAudio();
@@ -609,7 +612,9 @@ class AudioPlayer {
 
       let title = spotifyMeta.name + ' - ' + artistString;
       // attempt to find the song on youtube
-      const srResults = await ytsr(title, { limit: 1 });
+      const srQuery = (await ytsr.getFilters(title)).get('Type').get('Video')
+        .url;
+      const srResults = await ytsr(srQuery, { limit: 1 });
 
       if (!srResults.items[0]) {
         message.inlineReply("Sorry, can't play this Spotify song!");
