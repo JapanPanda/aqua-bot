@@ -95,7 +95,9 @@ class AudioPlayer {
   async restart() {
     if (this.voiceConnection) {
       this.shouldRestart = true;
-      await this.voiceConnection.dispatcher.destroy();
+      if (this.voiceConnection.dispatcher) {
+        await this.voiceConnection.dispatcher.destroy();
+      }
     }
   }
 
