@@ -260,7 +260,7 @@ class AudioPlayer {
         const srQuery = (await ytsr.getFilters(this.currentSong.meta.title))
           .get('Type')
           .get('Video').url;
-        const srResults = await ytsr(srQuery, { limit: 1 });
+        const srResult = await ytsr(srQuery, { limit: 1 });
         if (srResult.items.length === 0) {
           // song not available, must skip
           playNextAudio();
