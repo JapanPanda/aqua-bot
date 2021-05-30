@@ -89,7 +89,9 @@ class AudioPlayer {
   skip(skipIndex) {
     skipIndex = skipIndex - 1;
     this.queue.splice(0, skipIndex);
-    this.voiceConnection.dispatcher.destroy();
+    if (this.voiceConnection.dispatcher) {
+      this.voiceConnection.dispatcher.destroy();
+    }
   }
 
   async restart() {
@@ -703,7 +705,10 @@ class AudioPlayer {
 
   async queueAudio(args, message, isNow = false, isPredefined = false) {
     const voiceChannel = message.member.voice.channel;
-    if (!this.voiceConnection) {
+    if (!voiceChannel) {
+      message.inlineReply({ content: 'Please join a voice channel first!' });
+      return;
+    } else if (!this.voiceConnection) {
       await this.join(voiceChannel);
     } else if (this.voiceConnection.channel.id !== voiceChannel.id) {
       message.inlineReply({ content: "I'm already in another voice channel!" });

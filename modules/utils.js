@@ -152,6 +152,29 @@ const getSpotifyPlaylist = async (url) => {
   }
 };
 
+const getSpotifyArtistTopTracks = async (url) => {
+  let artistID = getSpotifyID(url);
+
+  try {
+    let artist = (await spotifyClient.getArtist(artistID)).body;
+    let playlist = (await spotifyClient.getArtistTopTracks(artistID, 'US'))
+      .body;
+    let tracks = playlist.tracks;
+    const parsedPlaylist = {
+      title: artist.name + ' - Top Tracks',
+      url: url,
+      tracks: [...tracks],
+    };
+
+    return parsedPlaylist;
+  } catch (err) {
+    logger.error(
+      `Error while retrieving Spotify Playlist ${url}.\n${err.stack}`
+    );
+    return null;
+  }
+};
+
 // used to differentiate album vs playlist
 const parseSpotifyLink = async (url) => {
   if (url.includes('/playlist/')) {
@@ -159,6 +182,9 @@ const parseSpotifyLink = async (url) => {
     return playlist;
   } else if (url.includes('/album/')) {
     let playlist = await getSpotifyAlbum(url);
+    return playlist;
+  } else if (url.includes('/artist/')) {
+    let playlist = await getSpotifyArtistTopTracks(url);
     return playlist;
   } else {
     logger.error(`Unrecognizable Spotify link ${url}.`);
@@ -203,9 +229,10 @@ const getSpotifyPlaylistQueryString = (tracks, page) => {
 
 const getSpotifyPlaylistQueryEmbed = (playlist, page, requester, url) => {
   // calculate the duration
-  let durationSeconds = playlist.tracks
-    .map((ele) => ele.duration_ms)
-    .reduce((acc, ele) => acc + ele);
+  let durationSeconds =
+    playlist.tracks
+      .map((ele) => ele.duration_ms)
+      .reduce((acc, ele) => acc + ele) / 1000;
 
   let totalTime = convertSecondsToISO(durationSeconds);
 
