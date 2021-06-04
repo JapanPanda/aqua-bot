@@ -647,11 +647,14 @@ class AudioPlayer {
         return;
       }
 
+      console.log(this.queue);
       if (isNow) {
-        this.queue.shift(song);
+        this.queue.unshift(song);
       } else {
         this.queue.push(song);
       }
+      console.log(this.queue);
+      console.log(isNow);
 
       logger.info(`Queued Spotify Track ${title} for ${this.guildID}`);
       const queueEmbed = createAnnounceEmbed(
@@ -694,7 +697,7 @@ class AudioPlayer {
     }
 
     if (isNow) {
-      this.queue.shift(newSong);
+      this.queue.unshift(newSong);
     } else {
       this.queue.push(newSong);
     }
