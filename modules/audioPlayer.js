@@ -252,10 +252,11 @@ class AudioPlayer {
     }
 
     let audioData = null;
-    let audioOptions = { volume, highWaterMark: 1, type: 'opus' };
+    let audioOptions = { volume, highWaterMark: 1 };
     if (this.currentSong.isPredefined) {
       audioData = `./assets/${this.currentSong.audioPath}`;
     } else {
+      audioOptions.type = 'opus';
       let audioPath = this.currentSong.audioPath;
       // convert spotify to youtube link
       if (this.currentSong.audioPath.includes('spotify')) {
