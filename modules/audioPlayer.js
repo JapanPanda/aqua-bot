@@ -140,9 +140,9 @@ class AudioPlayer {
         if (autoplay && this.lastNonPredefinedSong && this.voiceConnection) {
           this.getSongFromAutoplay();
         } else {
-          if (this.currentSong && !this.currentSong.isPredefined) {
+          if (this.transcoder) {
             logger.info(`Destroyed transcoder`);
-            this.currentSong.audioPath.destroy();
+            this.transcoder.destroy();
           }
           this.currentSong = null;
           logger.info(
