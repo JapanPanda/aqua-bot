@@ -9,6 +9,7 @@ const {
   getPlaybackSettingsString,
   getSpotifyPlaylistQueryEmbedFromUrl,
   getHelpEmbed,
+  calculateNextPage,
 } = require('./utils');
 const redisClient = require('./redis');
 require('./spotify');
@@ -30,8 +31,7 @@ class AquaClient {
       partials: ['MESSAGE', 'REACTION'],
     });
     this.prefix = prefix;
-    // use object instead of map due to get overhead
-    this.activeGuilds = {};
+    this.activeGuilds = new Map();
     this.loadCommands();
     this.setUpClientEvents();
   }
@@ -116,97 +116,83 @@ class AquaClient {
     });
   }
 
+  // handle reaction update for queue message
+  async handleQueueUpdate(reaction, embed) {
+    let page = parseInt(embed.fields[2].value.split('/')[0]);
+    let maxPage = parseInt(embed.fields[2].value.split('/')[1]);
+    page = calculateNextPage(reaction.emoji.name, page, maxPage);
+
+    const guild = this.getGuildObject(reaction.message.guild.id);
+    const playbackSettings = await this.getGuildSettings(
+      reaction.message.guild.id
+    );
+    const queueEmbed = await getQueueEmbed(
+      guild.audioPlayer,
+      page,
+      playbackSettings
+    );
+    const psString = getPlaybackSettingsString(playbackSettings);
+    if (psString != '') {
+      queueEmbed.setFooter(psString);
+    }
+    reaction.message.edit(queueEmbed);
+  }
+
+  // handle reaction update for help message
+  handleHelpUpdate(reaction, embed) {
+    let page = parseInt(embed.fields[0].value.split('/')[0]);
+    let maxPage = parseInt(embed.fields[0].value.split('/')[1]);
+    page = calculateNextPage(reaction.emoji.name, page, maxPage);
+
+    const helpEmbed = getHelpEmbed(page, reaction.message.guild.id);
+    reaction.message.edit(helpEmbed);
+  }
+
+  // handle reaction update for playlist update
+  async handlePlaylistUpdate(reaction, embed) {
+    let page = parseInt(embed.fields[4].value.split('/')[0]);
+    let maxPage = parseInt(embed.fields[4].value.split('/')[1]);
+    page = calculateNextPage(reaction.emoji.name, page, maxPage);
+
+    let split = embed.fields[0].value.split('(');
+    let playlistUrl = split[split.length - 1].split(')')[0];
+    let requester = embed.fields[3].value.split('[')[1].split(']')[0];
+
+    let queueEmbed = null;
+    if (playlistUrl.includes('spotify')) {
+      queueEmbed = await getSpotifyPlaylistQueryEmbedFromUrl(
+        playlistUrl,
+        page,
+        requester
+      );
+    } else {
+      queueEmbed = await getPlaylistQueryEmbedFromUrl(
+        playlistUrl,
+        page,
+        requester
+      );
+    }
+    const playbackSettings = await this.getGuildSettings(
+      reaction.message.guild.id
+    );
+    const psString = getPlaybackSettingsString(playbackSettings);
+    if (psString != '') {
+      queueEmbed.setFooter(psString);
+    }
+    reaction.message.edit(queueEmbed);
+  }
+
   async reactionHandler(reaction, user) {
     await reaction.users.remove(user.id);
 
     if (reaction.message.embeds.length === 1) {
       const embed = reaction.message.embeds[0];
       if (embed.title === 'Queue') {
-        let page = parseInt(embed.fields[2].value.split('/')[0]);
-        let maxPage = parseInt(embed.fields[2].value.split('/')[1]);
-        if (reaction.emoji.name === '⬅️') {
-          page = page - 1;
-        } else if (reaction.emoji.name === '➡️') {
-          page = page + 1;
-        }
-
-        if (page > maxPage) {
-          page = 1;
-        } else if (page < 1) {
-          page = maxPage;
-        }
-
-        const guild = this.getGuildObject(reaction.message.guild.id);
-        const playbackSettings = await this.getGuildSettings(
-          reaction.message.guild.id
-        );
-        const queueEmbed = await getQueueEmbed(
-          guild.audioPlayer,
-          page,
-          playbackSettings
-        );
-        const psString = getPlaybackSettingsString(playbackSettings);
-        if (psString != '') {
-          queueEmbed.setFooter(psString);
-        }
-        reaction.message.edit(queueEmbed);
+        this.handleQueueUpdate(reaction, embed);
       } else if (embed.title === 'Help Has Arrived') {
-        let page = parseInt(embed.fields[0].value.split('/')[0]);
-        let maxPage = parseInt(embed.fields[0].value.split('/')[1]);
-        if (reaction.emoji.name === '⬅️') {
-          page = page - 1;
-        } else if (reaction.emoji.name === '➡️') {
-          page = page + 1;
-        }
-
-        if (page > maxPage) {
-          page = 1;
-        } else if (page < 1) {
-          page = maxPage;
-        }
-
-        const helpEmbed = getHelpEmbed(page, reaction.message.guild.id);
-        reaction.message.edit(helpEmbed);
+        this.handleHelpUpdate(reaction, embed);
       } else if (embed.title === 'Queued Playlist') {
-        let page = parseInt(embed.fields[4].value.split('/')[0]);
-        let maxPage = parseInt(embed.fields[4].value.split('/')[1]);
-        if (reaction.emoji.name === '⬅️') {
-          page = page - 1;
-        } else if (reaction.emoji.name === '➡️') {
-          page = page + 1;
-        }
-
-        if (page > maxPage) {
-          page = 1;
-        } else if (page < 1) {
-          page = maxPage;
-        }
-        let split = embed.fields[0].value.split('(');
-        let playlistUrl = split[split.length - 1].split(')')[0];
-        let requester = embed.fields[3].value.split('[')[1].split(']')[0];
-
-        let queueEmbed = null;
-        if (playlistUrl.includes('spotify')) {
-          queueEmbed = await getSpotifyPlaylistQueryEmbedFromUrl(
-            playlistUrl,
-            page,
-            requester
-          );
-        } else {
-          queueEmbed = await getPlaylistQueryEmbedFromUrl(
-            playlistUrl,
-            page,
-            requester
-          );
-        }
-        const playbackSettings = await this.getGuildSettings(
-          reaction.message.guild.id
-        );
-        const psString = getPlaybackSettingsString(playbackSettings);
-        if (psString != '') {
-          queueEmbed.setFooter(psString);
-        }
-        reaction.message.edit(queueEmbed);
+        this.handlePlaylistUpdate(reaction, embed);
       }
     }
   }
@@ -216,13 +202,13 @@ class AquaClient {
   }
 
   getGuildObject(guildID) {
-    if (!(guildID in this.activeGuilds)) {
-      this.activeGuilds[guildID] = {
+    if (!this.activeGuilds.has(guildID)) {
+      this.activeGuilds.set(guildID, {
         audioPlayer: new AudioPlayer(this, guildID),
-      };
+      });
     }
 
-    return this.activeGuilds[guildID];
+    return this.activeGuilds.get(guildID);
   }
 
   async getGuildSettings(guildID) {

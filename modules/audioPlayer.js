@@ -217,6 +217,57 @@ class AudioPlayer {
     this.playNextAudio();
   }
 
+  getEncoderString({ nightcore, vaporwave, bassboost, treble, rotate }) {
+    let encoder = '';
+
+    // alternative to bass and treble
+    //      if (bassboost !== 0 || treble !== 0) {
+    //        if (encoder !== '') {
+    //          encoder += ',';
+    //        }
+    //        encoder = `firequalizer=gain_entry='entry(0,${bassboost});entry(250,${
+    //          bassboost / 2
+    //        });entry(1000,0);entry(4000,${treble / 2});entry(16000,${treble})'`;
+    //      }
+
+    if (nightcore) {
+      if (encoder !== '') {
+        encoder += ',';
+      }
+      encoder += 'atempo=0.95,asetrate=44100*1.40';
+    }
+
+    if (vaporwave) {
+      if (encoder !== '') {
+        encoder += ',';
+      }
+      encoder += 'atempo=0.75,adelay=0.2';
+    }
+
+    if (bassboost !== 0) {
+      if (encoder !== '') {
+        encoder += ',';
+      }
+      encoder += `lowshelf=g=${bassboost}:f=150:w=0.8`;
+    }
+
+    if (treble !== 0) {
+      if (encoder !== '') {
+        encoder += ',';
+      }
+      encoder += `highshelf=g=${treble}:f=14000:w=1.2`;
+    }
+
+    if (rotate !== 0) {
+      if (encoder !== '') {
+        encoder += ',';
+      }
+      encoder += `apulsator=hz=${1 / rotate}`;
+    }
+
+    return encoder;
+  }
+
   async playNextAudio() {
     const {
       volume,
@@ -272,51 +323,13 @@ class AudioPlayer {
         audioPath = srResult.items[0].url;
       }
 
-      let encoder = '';
-      if (nightcore) {
-        if (encoder !== '') {
-          encoder += ',';
-        }
-        encoder += 'atempo=0.95,asetrate=44100*1.40';
-      }
-
-      if (vaporwave) {
-        if (encoder !== '') {
-          encoder += ',';
-        }
-        encoder += 'atempo=0.75,adelay=0.2';
-      }
-
-      if (bassboost !== 0) {
-        if (encoder !== '') {
-          encoder += ',';
-        }
-        encoder += `lowshelf=g=${bassboost}:f=150:w=0.8`;
-      }
-
-      if (treble !== 0) {
-        if (encoder !== '') {
-          encoder += ',';
-        }
-        encoder += `highshelf=g=${treble}:f=14000:w=1.2`;
-      }
-
-      if (rotate !== 0) {
-        if (encoder !== '') {
-          encoder += ',';
-        }
-        encoder += `apulsator=hz=${1 / rotate}`;
-      }
-
-      // alternative to bass and treble
-      //      if (bassboost !== 0 || treble !== 0) {
-      //        if (encoder !== '') {
-      //          encoder += ',';
-      //        }
-      //        encoder = `firequalizer=gain_entry='entry(0,${bassboost});entry(250,${
-      //          bassboost / 2
-      //        });entry(1000,0);entry(4000,${treble / 2});entry(16000,${treble})'`;
-      //      }
+      let encoder = this.getEncoderString({
+        nightcore,
+        vaporwave,
+        bassboost,
+        treble,
+        rotate,
+      });
 
       const args = [
         '-analyzeduration',
@@ -617,8 +630,9 @@ class AudioPlayer {
 
       let title = spotifyMeta.name + ' - ' + artistString;
       // attempt to find the song on youtube
-      const srQuery = (await ytsr.getFilters(title)).get('Type').get('Video')
-        .url;
+      const srQuery = (await ytsr.getFilters(title))
+        .get('Type')
+        .get('Video').url;
       const srResults = await ytsr(srQuery, { limit: 1 });
 
       if (!srResults.items[0]) {
@@ -648,14 +662,11 @@ class AudioPlayer {
         return;
       }
 
-      console.log(this.queue);
       if (isNow) {
         this.queue.unshift(song);
       } else {
         this.queue.push(song);
       }
-      console.log(this.queue);
-      console.log(isNow);
 
       logger.info(`Queued Spotify Track ${title} for ${this.guildID}`);
       const queueEmbed = createAnnounceEmbed(

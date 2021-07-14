@@ -12,6 +12,22 @@ const createAnnounceEmbed = (title, description, color = '#00FFFF') => {
     .setColor(color);
 };
 
+const calculateNextPage = (emojiName, page, maxPage) => {
+  if (emojiName === '⬅️') {
+    page = page - 1;
+  } else if (emojiName === '➡️') {
+    page = page + 1;
+  }
+
+  if (page > maxPage) {
+    page = 1;
+  } else if (page < 1) {
+    page = maxPage;
+  }
+
+  return page;
+};
+
 const getHelpEmbed = (page) => {
   let helpEmbed = new MessageEmbed();
   helpEmbed.setColor('#E0FFFF').setTitle('Help Has Arrived');
@@ -490,6 +506,7 @@ module.exports = {
   createAnnounceEmbed,
   trimDurationString,
   convertSecondsToISO,
+  calculateNextPage,
   getPlaylistQueryString,
   getPlaylistQueryEmbed,
   getPlaylistQueryEmbedFromUrl,

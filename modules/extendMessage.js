@@ -1,3 +1,5 @@
+// credit goes to https://gist.github.com/Allvaa/0320f06ee793dc88e4e209d3ea9f6256
+// defines an inlineReply function for our messages
 const { APIMessage, Structures } = require('discord.js-light');
 
 class ExtAPIMessage extends APIMessage {
