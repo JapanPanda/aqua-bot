@@ -28,6 +28,7 @@ const calculateNextPage = (emojiName, page, maxPage) => {
   return page;
 };
 
+// move to help command
 const getHelpEmbed = (page) => {
   let helpEmbed = new MessageEmbed();
   helpEmbed.setColor('#E0FFFF').setTitle('Help Has Arrived');

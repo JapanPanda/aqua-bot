@@ -556,8 +556,17 @@ class AudioPlayer {
 
   async queueSpotifyPlaylist(audioUrl, message, isNow) {
     let playlist = await parseSpotifyLink(audioUrl);
-    let tracks = playlist.tracks;
+    if (!playlist) {
+      message.inlineReply(
+        "Can't seem to find this playlist. Please make sure it's a public playlist."
+      );
+      return;
+    }
+
     let shouldPlay = this.queue.length === 0 && !this.currentSong;
+    playlist.tracks = playlist.tracks.filter((ele) => ele !== null);
+
+    let tracks = playlist.tracks;
     for (const [i, track] of tracks.entries()) {
       const url = track.external_urls.spotify;
       let artistString = '';
